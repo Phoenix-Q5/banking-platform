@@ -1,0 +1,32 @@
+global:
+  resolve_timeout: 5m
+
+route:
+  receiver: ops-agent
+  group_by: ['alertname', 'service', 'application', 'category']
+  group_wait: 10s
+  group_interval: 30s
+  repeat_interval: 2m
+  routes:
+    - matchers:
+        - severity = critical
+      receiver: ops-agent
+      continue: true
+    - matchers:
+        - severity = warning
+      receiver: ops-agent
+
+receivers:
+  - name: ops-agent
+    webhook_configs:
+      - url: 'http://ops-agent:8085/api/agent/webhooks/alertmanager'
+        send_resolved: true
+        http_config:
+          follow_redirects: true
+
+inhibit_rules:
+  - source_matchers:
+      - severity = critical
+    target_matchers:
+      - severity = warning
+    equal: ['alertname', 'service', 'application']

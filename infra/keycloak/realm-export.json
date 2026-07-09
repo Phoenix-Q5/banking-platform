@@ -1,0 +1,124 @@
+{
+  "realm": "banking",
+  "enabled": true,
+  "sslRequired": "none",
+  "roles": {
+    "realm": [
+      {
+        "name": "CUSTOMER",
+        "description": "Retail banking customer"
+      },
+      {
+        "name": "ADMIN",
+        "description": "Back-office / admin console user"
+      },
+      {
+        "name": "SUPPORT",
+        "description": "Contact-center support agent"
+      }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "banking-web",
+      "publicClient": true,
+      "enabled": true,
+      "redirectUris": [
+        "http://localhost:3001/*",
+        "http://localhost:5173/*",
+        "http://127.0.0.1:3001/*",
+        "http://127.0.0.1:5173/*"
+      ],
+      "webOrigins": [
+        "http://localhost:3001",
+        "http://localhost:5173",
+        "http://127.0.0.1:3001",
+        "http://127.0.0.1:5173"
+      ],
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "protocol": "openid-connect"
+    },
+    {
+      "clientId": "banking-mobile",
+      "publicClient": true,
+      "enabled": true,
+      "redirectUris": [
+        "harborbank://callback",
+        "com.harborbank.mobile://callback"
+      ],
+      "webOrigins": [
+        "*"
+      ],
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "protocol": "openid-connect",
+      "description": "Harbor Bank iOS / mobile banking client"
+    },
+    {
+      "clientId": "banking-service-client",
+      "publicClient": false,
+      "secret": "change-me-in-a-real-deployment",
+      "enabled": true,
+      "serviceAccountsEnabled": true,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "protocol": "openid-connect",
+      "description": "Client-credentials client for service-to-service calls (e.g. an AI agent hitting internal APIs)"
+    }
+  ],
+  "users": [
+    {
+      "username": "demo.customer",
+      "enabled": true,
+      "email": "demo.customer@example.com",
+      "firstName": "Demo",
+      "lastName": "Customer",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "CUSTOMER"
+      ]
+    },
+    {
+      "username": "demo.admin",
+      "enabled": true,
+      "email": "demo.admin@example.com",
+      "firstName": "Demo",
+      "lastName": "Admin",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "ADMIN",
+        "SUPPORT"
+      ]
+    },
+    {
+      "username": "demo.support",
+      "enabled": true,
+      "email": "demo.support@example.com",
+      "firstName": "Casey",
+      "lastName": "Support",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "SUPPORT"
+      ]
+    }
+  ]
+}

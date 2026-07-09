@@ -1,0 +1,10 @@
+.DS_Store
+xcuserdata/
+*.xcuserstate
+DerivedData/
+.build/
+HarborBank.xcodeproj/
+HarborBank.xcworkspace/
+*.ipa
+*.dSYM.zip
+.env

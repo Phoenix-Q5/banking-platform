@@ -1,0 +1,82 @@
+global:
+  scrape_interval: 10s
+  evaluation_interval: 10s
+
+rule_files:
+  - /etc/prometheus/rules/*.yml
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ['alertmanager:9093']
+
+scrape_configs:
+  - job_name: 'api-gateway'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['api-gateway:8080']
+        labels:
+          service: 'api-gateway'
+
+  - job_name: 'account-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['account-service:8081']
+        labels:
+          service: 'account-service'
+
+  - job_name: 'transaction-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['transaction-service:8082']
+        labels:
+          service: 'transaction-service'
+
+  - job_name: 'customer-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['customer-service:8083']
+        labels:
+          service: 'customer-service'
+
+  - job_name: 'payment-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['payment-service:8084']
+        labels:
+          service: 'payment-service'
+
+  - job_name: 'ops-agent'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['ops-agent:8085']
+        labels:
+          service: 'ops-agent'
+
+  - job_name: 'card-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['card-service:8086']
+        labels:
+          service: 'card-service'
+
+  - job_name: 'notification-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['notification-service:8087']
+        labels:
+          service: 'notification-service'
+
+  - job_name: 'audit-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['audit-service:8088']
+        labels:
+          service: 'audit-service'
+
+  - job_name: 'loan-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['loan-service:8089']
+        labels:
+          service: 'loan-service'

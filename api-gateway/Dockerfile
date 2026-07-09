@@ -1,0 +1,26 @@
+FROM maven:3.9-eclipse-temurin-17 AS build
+WORKDIR /workspace
+
+COPY pom.xml .
+COPY banking-events/pom.xml banking-events/pom.xml
+COPY api-gateway/pom.xml api-gateway/pom.xml
+COPY account-service/pom.xml account-service/pom.xml
+COPY transaction-service/pom.xml transaction-service/pom.xml
+COPY ops-agent/pom.xml ops-agent/pom.xml
+COPY customer-service/pom.xml customer-service/pom.xml
+COPY payment-service/pom.xml payment-service/pom.xml
+COPY card-service/pom.xml card-service/pom.xml
+COPY notification-service/pom.xml notification-service/pom.xml
+COPY audit-service/pom.xml audit-service/pom.xml
+COPY loan-service/pom.xml loan-service/pom.xml
+
+RUN mvn -q -pl api-gateway -am dependency:go-offline -DskipTests || true
+
+COPY api-gateway api-gateway
+RUN mvn -q -pl api-gateway -am clean package -DskipTests
+
+FROM eclipse-temurin:17-jre-alpine
+WORKDIR /app
+COPY --from=build /workspace/api-gateway/target/*.jar app.jar
+EXPOSE 8080
+ENTRYPOINT ["java", "-jar", "app.jar"]

@@ -1,0 +1,307 @@
+:root {
+  --ink: #102a43;
+  --muted: #627d98;
+  --paper: #f4f7fb;
+  --panel: rgba(255, 255, 255, 0.88);
+  --line: #d9e2ec;
+  --sea: #0f6a6a;
+  --sea-deep: #0b4f4f;
+  --navy: #243b53;
+  --sand: #e8f0f5;
+  --warn: #b44d12;
+  --danger: #9b1c1c;
+  --ok: #0f6a6a;
+  --shadow: 0 20px 50px rgba(16, 42, 67, 0.08);
+}
+
+* { box-sizing: border-box; }
+
+html, body, #root {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  font-family: Manrope, system-ui, sans-serif;
+  color: var(--ink);
+  background:
+    radial-gradient(1000px 520px at 0% -10%, rgba(15, 106, 106, 0.16), transparent 55%),
+    radial-gradient(900px 480px at 100% 0%, rgba(36, 59, 83, 0.14), transparent 50%),
+    linear-gradient(180deg, #e7eef5 0%, var(--paper) 42%, #eef3f7 100%);
+}
+
+a { color: inherit; text-decoration: none; }
+
+button, input, select, textarea {
+  font: inherit;
+}
+
+.app-shell {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 24px 18px 48px;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+.brand {
+  font-family: Fraunces, Georgia, serif;
+  font-size: clamp(1.8rem, 3vw, 2.4rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--navy);
+}
+
+.brand span {
+  color: var(--sea);
+}
+
+.nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.nav a, .nav button.linkish {
+  padding: 8px 12px;
+  border-radius: 2px;
+  color: var(--muted);
+  border: 1px solid transparent;
+  background: transparent;
+  cursor: pointer;
+}
+
+.nav a.active, .nav a:hover, .nav button.linkish:hover {
+  color: var(--ink);
+  border-color: var(--line);
+  background: rgba(255,255,255,0.7);
+}
+
+.user-chip {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 24px;
+  min-height: calc(100vh - 120px);
+  align-items: center;
+}
+
+@media (max-width: 900px) {
+  .hero { grid-template-columns: 1fr; min-height: auto; }
+}
+
+.hero-copy h1 {
+  font-family: Fraunces, Georgia, serif;
+  font-size: clamp(2.4rem, 5vw, 3.8rem);
+  line-height: 1.05;
+  margin: 0 0 14px;
+  color: var(--navy);
+}
+
+.hero-copy p {
+  margin: 0 0 22px;
+  color: var(--muted);
+  font-size: 1.08rem;
+  max-width: 34rem;
+  line-height: 1.55;
+}
+
+.hero-visual {
+  min-height: 360px;
+  border-radius: 4px;
+  background:
+    linear-gradient(145deg, rgba(15,106,106,0.92), rgba(36,59,83,0.88)),
+    url("data:image/svg+xml,%3Csvg width='160' height='160' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 80c40-30 80-30 120 0s80 30 120 0' fill='none' stroke='rgba(255,255,255,0.18)' stroke-width='2'/%3E%3C/svg%3E");
+  background-size: cover, 180px 180px;
+  box-shadow: var(--shadow);
+  position: relative;
+  overflow: hidden;
+  animation: tide 8s ease-in-out infinite alternate;
+}
+
+.hero-visual::after {
+  content: "";
+  position: absolute;
+  inset: auto 12% 18% 12%;
+  height: 2px;
+  background: rgba(255,255,255,0.35);
+  animation: swell 4.5s ease-in-out infinite;
+}
+
+@keyframes tide {
+  from { transform: translateY(0); }
+  to { transform: translateY(-8px); }
+}
+
+@keyframes swell {
+  0%, 100% { opacity: 0.35; transform: scaleX(0.9); }
+  50% { opacity: 0.8; transform: scaleX(1.05); }
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid rgba(217, 226, 236, 0.95);
+  box-shadow: var(--shadow);
+  border-radius: 4px;
+  padding: 18px;
+  backdrop-filter: blur(8px);
+}
+
+.panel h2 {
+  margin: 0 0 12px;
+  font-size: 0.78rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--sea-deep);
+}
+
+.grid {
+  display: grid;
+  gap: 16px;
+}
+
+.grid.two { grid-template-columns: 1.1fr 0.9fr; }
+.grid.three { grid-template-columns: repeat(3, 1fr); }
+
+@media (max-width: 900px) {
+  .grid.two, .grid.three { grid-template-columns: 1fr; }
+}
+
+.stat {
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.stat:last-child { border-bottom: 0; }
+
+.stat .label { color: var(--muted); font-size: 0.85rem; }
+.stat .value {
+  font-family: Fraunces, Georgia, serif;
+  font-size: 1.6rem;
+  margin-top: 4px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.94rem;
+}
+
+.table th, .table td {
+  text-align: left;
+  padding: 10px 8px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+
+.table th {
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.badge.ACTIVE, .badge.COMPLETED, .badge.VERIFIED, .badge.SENT, .badge.APPROVED { color: var(--ok); border-color: rgba(15,106,106,0.35); }
+.badge.FROZEN, .badge.PENDING, .badge.SCHEDULED, .badge.IN_REVIEW, .badge.APPLIED, .badge.UNDER_REVIEW { color: var(--warn); border-color: rgba(180,77,18,0.35); }
+.badge.FAILED, .badge.REJECTED, .badge.CANCELLED, .badge.SUSPENDED, .badge.CLOSED { color: var(--danger); border-color: rgba(155,28,28,0.35); }
+
+.form {
+  display: grid;
+  gap: 10px;
+}
+
+.form label {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.form input, .form select, .form textarea {
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--ink);
+  padding: 10px 12px;
+  border-radius: 2px;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+button.primary, .btn {
+  border: 0;
+  background: var(--sea);
+  color: white;
+  padding: 10px 14px;
+  border-radius: 2px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+button.secondary {
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--navy);
+  padding: 10px 14px;
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+.error {
+  color: var(--danger);
+  font-size: 0.9rem;
+  margin-top: 8px;
+}
+
+.muted { color: var(--muted); }
+
+.empty {
+  color: var(--muted);
+  padding: 12px 0;
+}
+
+.login-card {
+  max-width: 420px;
+}
+
+.page-title {
+  font-family: Fraunces, Georgia, serif;
+  font-size: 1.8rem;
+  margin: 0 0 6px;
+}
+
+.page-sub {
+  color: var(--muted);
+  margin: 0 0 18px;
+}

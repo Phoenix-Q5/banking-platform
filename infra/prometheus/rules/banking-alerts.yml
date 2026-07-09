@@ -1,0 +1,75 @@
+groups:
+  - name: banking-platform-health
+    interval: 15s
+    rules:
+      - alert: ServiceDown
+        expr: up{job=~"api-gateway|account-service|transaction-service|ops-agent|customer-service|payment-service|card-service|notification-service|audit-service|loan-service"} == 0
+        for: 30s
+        labels:
+          severity: critical
+          category: availability
+        annotations:
+          summary: "Service {{ $labels.service }} is down"
+          description: "Prometheus target {{ $labels.job }} has been unreachable for more than 30s."
+          runbook: "Check container health, recent deploys, and /actuator/health on the service."
+
+      - alert: HighErrorRate
+        expr: |
+          (
+            sum by (application) (rate(http_server_requests_seconds_count{status=~"5.."}[2m]))
+            /
+            clamp_min(sum by (application) (rate(http_server_requests_seconds_count[2m])), 0.001)
+          ) > 0.05
+        for: 1m
+        labels:
+          severity: warning
+          category: errors
+        annotations:
+          summary: "Elevated 5xx rate on {{ $labels.application }}"
+          description: "More than 5% of requests are failing with 5xx on {{ $labels.application }}."
+          runbook: "Correlate with Loki error logs and Tempo traces for failing endpoints."
+
+      - alert: HighLatencyP95
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (le, application) (rate(http_server_requests_seconds_bucket[5m]))
+          ) > 2
+        for: 2m
+        labels:
+          severity: warning
+          category: latency
+        annotations:
+          summary: "High p95 latency on {{ $labels.application }}"
+          description: "p95 request latency exceeds 2s on {{ $labels.application }}."
+          runbook: "Inspect slow spans in Tempo and downstream circuit breaker state."
+
+      - alert: CircuitBreakerOpen
+        expr: |
+          resilience4j_circuitbreaker_state{state="open"} == 1
+          or
+          resilience4j_circuitbreaker_state{state="OPEN"} == 1
+        for: 15s
+        labels:
+          severity: critical
+          category: resiliency
+        annotations:
+          summary: "Circuit breaker open on {{ $labels.application }}"
+          description: "Circuit breaker {{ $labels.name }} is OPEN — downstream calls are failing fast."
+          runbook: "Check downstream health, recent error spikes, and mitigation playbooks."
+
+      - alert: DatabaseUnhealthy
+        expr: |
+          sum by (application) (up{job=~"account-service|transaction-service"}) == 1
+          and
+          on(application) sum by (application) (
+            spring_boot_health_status{status="DOWN"}
+          ) > 0
+        for: 30s
+        labels:
+          severity: critical
+          category: database
+        annotations:
+          summary: "Health check DOWN on {{ $labels.application }}"
+          description: "Spring Boot health reports DOWN — likely DB or downstream dependency."
+          runbook: "Inspect /actuator/health details and Postgres connectivity."

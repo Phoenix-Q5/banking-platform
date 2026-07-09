@@ -1,0 +1,176 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8180/realms/banking}
+  cloud:
+    gateway:
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins:
+              - "http://localhost:3001"
+              - "http://localhost:5173"
+              - "http://127.0.0.1:3001"
+              - "http://127.0.0.1:5173"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - PATCH
+              - DELETE
+              - OPTIONS
+            allowedHeaders: "*"
+            allowCredentials: true
+      routes:
+        - id: account-service
+          uri: ${ACCOUNT_SERVICE_URI:http://localhost:8081}
+          predicates:
+            - Path=/api/accounts/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: accountServiceCB
+                fallbackUri: forward:/fallback/account-service
+            - name: Retry
+              args:
+                retries: 2
+                statuses: BAD_GATEWAY, SERVICE_UNAVAILABLE, GATEWAY_TIMEOUT
+
+        - id: transaction-service
+          uri: ${TRANSACTION_SERVICE_URI:http://localhost:8082}
+          predicates:
+            - Path=/api/transactions/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: transactionServiceCB
+                fallbackUri: forward:/fallback/transaction-service
+            - name: Retry
+              args:
+                retries: 2
+                statuses: BAD_GATEWAY, SERVICE_UNAVAILABLE, GATEWAY_TIMEOUT
+
+        - id: customer-service
+          uri: ${CUSTOMER_SERVICE_URI:http://localhost:8083}
+          predicates:
+            - Path=/api/customers/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: customerServiceCB
+                fallbackUri: forward:/fallback/customer-service
+
+        - id: payment-service
+          uri: ${PAYMENT_SERVICE_URI:http://localhost:8084}
+          predicates:
+            - Path=/api/payments/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: paymentServiceCB
+                fallbackUri: forward:/fallback/payment-service
+
+        - id: card-service
+          uri: ${CARD_SERVICE_URI:http://localhost:8086}
+          predicates:
+            - Path=/api/cards/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: cardServiceCB
+                fallbackUri: forward:/fallback/card-service
+
+        - id: notification-service
+          uri: ${NOTIFICATION_SERVICE_URI:http://localhost:8087}
+          predicates:
+            - Path=/api/notifications/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: notificationServiceCB
+                fallbackUri: forward:/fallback/notification-service
+
+        - id: audit-service
+          uri: ${AUDIT_SERVICE_URI:http://localhost:8088}
+          predicates:
+            - Path=/api/audit/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: auditServiceCB
+                fallbackUri: forward:/fallback/audit-service
+
+        - id: loan-service
+          uri: ${LOAN_SERVICE_URI:http://localhost:8089}
+          predicates:
+            - Path=/api/loans/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: loanServiceCB
+                fallbackUri: forward:/fallback/loan-service
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      accountServiceCB: &cb
+        sliding-window-size: 20
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 15s
+        permitted-number-of-calls-in-half-open-state: 5
+      transactionServiceCB: *cb
+      customerServiceCB: *cb
+      paymentServiceCB: *cb
+      cardServiceCB: *cb
+      notificationServiceCB: *cb
+      auditServiceCB: *cb
+      loanServiceCB: *cb
+  timelimiter:
+    instances:
+      accountServiceCB: &tl
+        timeout-duration: 4s
+      transactionServiceCB: *tl
+      customerServiceCB: *tl
+      paymentServiceCB: *tl
+      cardServiceCB: *tl
+      notificationServiceCB: *tl
+      auditServiceCB: *tl
+      loanServiceCB: *tl
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, prometheus, metrics, gateway, circuitbreakers, circuitbreakerevents
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
+  health:
+    circuitbreakers:
+      enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+  tracing:
+    sampling:
+      probability: 1.0
+  otlp:
+    tracing:
+      endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4318/v1/traces}
+
+logging:
+  level:
+    root: INFO
+    org.springframework.cloud.gateway: INFO

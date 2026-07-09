@@ -1,0 +1,411 @@
+version: "3.8"
+
+networks:
+  banking-net:
+    driver: bridge
+
+volumes:
+  postgres-data:
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: banking
+      POSTGRES_PASSWORD: banking
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./infra/postgres-init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U banking"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks: [banking-net]
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:25.0
+    command: start-dev --import-realm
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    ports:
+      - "8180:8080"
+    volumes:
+      - ./infra/keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json
+    networks: [banking-net]
+
+  kafka:
+    image: bitnami/kafka:3.7
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_CFG_NODE_ID: 0
+      KAFKA_CFG_PROCESS_ROLES: controller,broker
+      KAFKA_CFG_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 0@kafka:9093
+      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: "true"
+      ALLOW_PLAINTEXT_LISTENER: "yes"
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-topics.sh --bootstrap-server localhost:9092 --list || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+    networks: [banking-net]
+
+  account-service:
+    build:
+      context: .
+      dockerfile: account-service/Dockerfile
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: accountdb
+      DB_USER: banking
+      DB_PASSWORD: banking
+      KEYCLOAK_ISSUER_URI: http://keycloak:8080/realms/banking
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318/v1/traces
+      SPRING_PROFILES_ACTIVE: json-logs
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      HARBOR_KAFKA_ENABLED: "true"
+    ports:
+      - "8081:8081"
+    depends_on:
+      kafka:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+    networks: [banking-net]
+
+  transaction-service:
+    build:
+      context: .
+      dockerfile: transaction-service/Dockerfile
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: transactiondb
+      DB_USER: banking
+      DB_PASSWORD: banking
+      KEYCLOAK_ISSUER_URI: http://keycloak:8080/realms/banking
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318/v1/traces
+      SPRING_PROFILES_ACTIVE: json-logs
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      HARBOR_KAFKA_ENABLED: "true"
+      ACCOUNT_SERVICE_URI: http://account-service:8081
+    ports:
+      - "8082:8082"
+    depends_on:
+      kafka:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+      account-service:
+        condition: service_started
+    networks: [banking-net]
+
+  customer-service:
+    build:
+      context: .
+      dockerfile: customer-service/Dockerfile
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: customerdb
+      DB_USER: banking
+      DB_PASSWORD: banking
+      KEYCLOAK_ISSUER_URI: http://keycloak:8080/realms/banking
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318/v1/traces
+      SPRING_PROFILES_ACTIVE: json-logs
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      HARBOR_KAFKA_ENABLED: "true"
+    ports:
+      - "8083:8083"
+    depends_on:
+      kafka:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+    networks: [banking-net]
+
+  payment-service:
+    build:
+      context: .
+      dockerfile: payment-service/Dockerfile
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: paymentdb
+      DB_USER: banking
+      DB_PASSWORD: banking
+      KEYCLOAK_ISSUER_URI: http://keycloak:8080/realms/banking
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318/v1/traces
+      SPRING_PROFILES_ACTIVE: json-logs
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      HARBOR_KAFKA_ENABLED: "true"
+    ports:
+      - "8084:8084"
+    depends_on:
+      kafka:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+    networks: [banking-net]
+
+  card-service:
+    build:
+      context: .
+      dockerfile: card-service/Dockerfile
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: carddb
+      DB_USER: banking
+      DB_PASSWORD: banking
+      KEYCLOAK_ISSUER_URI: http://keycloak:8080/realms/banking
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318/v1/traces
+      SPRING_PROFILES_ACTIVE: json-logs
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      HARBOR_KAFKA_ENABLED: "true"
+    ports:
+      - "8086:8086"
+    depends_on:
+      kafka:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+    networks: [banking-net]
+
+  notification-service:
+    build:
+      context: .
+      dockerfile: notification-service/Dockerfile
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: notificationdb
+      DB_USER: banking
+      DB_PASSWORD: banking
+      KEYCLOAK_ISSUER_URI: http://keycloak:8080/realms/banking
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318/v1/traces
+      SPRING_PROFILES_ACTIVE: json-logs
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      HARBOR_KAFKA_ENABLED: "true"
+      PUSH_ENABLED: "true"
+      NOTIFY_DEFAULT_CHANNELS: IN_APP,PUSH
+      KAFKA_CONSUMER_GROUP: notification-service
+    ports:
+      - "8087:8087"
+    depends_on:
+      kafka:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+    networks: [banking-net]
+
+  audit-service:
+    build:
+      context: .
+      dockerfile: audit-service/Dockerfile
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: auditdb
+      DB_USER: banking
+      DB_PASSWORD: banking
+      KEYCLOAK_ISSUER_URI: http://keycloak:8080/realms/banking
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318/v1/traces
+      SPRING_PROFILES_ACTIVE: json-logs
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      HARBOR_KAFKA_ENABLED: "true"
+      KAFKA_CONSUMER_GROUP: audit-service
+    ports:
+      - "8088:8088"
+    depends_on:
+      kafka:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+    networks: [banking-net]
+
+  loan-service:
+    build:
+      context: .
+      dockerfile: loan-service/Dockerfile
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: loandb
+      DB_USER: banking
+      DB_PASSWORD: banking
+      KEYCLOAK_ISSUER_URI: http://keycloak:8080/realms/banking
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318/v1/traces
+      SPRING_PROFILES_ACTIVE: json-logs
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      HARBOR_KAFKA_ENABLED: "true"
+    ports:
+      - "8089:8089"
+    depends_on:
+      kafka:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+    networks: [banking-net]
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: api-gateway/Dockerfile
+    environment:
+      ACCOUNT_SERVICE_URI: http://account-service:8081
+      TRANSACTION_SERVICE_URI: http://transaction-service:8082
+      CUSTOMER_SERVICE_URI: http://customer-service:8083
+      PAYMENT_SERVICE_URI: http://payment-service:8084
+      CARD_SERVICE_URI: http://card-service:8086
+      NOTIFICATION_SERVICE_URI: http://notification-service:8087
+      AUDIT_SERVICE_URI: http://audit-service:8088
+      LOAN_SERVICE_URI: http://loan-service:8089
+      KEYCLOAK_ISSUER_URI: http://keycloak:8080/realms/banking
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318/v1/traces
+      SPRING_PROFILES_ACTIVE: json-logs
+    ports:
+      - "8080:8080"
+    depends_on:
+      - account-service
+      - transaction-service
+      - customer-service
+      - payment-service
+      - card-service
+      - notification-service
+      - audit-service
+      - loan-service
+    networks: [banking-net]
+
+  ops-agent:
+    build:
+      context: .
+      dockerfile: ops-agent/Dockerfile
+    environment:
+      PLATFORM_NAME: harbor-bank
+      AUTO_INVESTIGATE: "true"
+      MITIGATION_MODE: recommend
+      PROMETHEUS_URL: http://prometheus:9090
+      LOKI_URL: http://loki:3100
+      TEMPO_URL: http://tempo:3200
+      API_GATEWAY_URL: http://api-gateway:8080
+      ACCOUNT_SERVICE_URL: http://account-service:8081
+      TRANSACTION_SERVICE_URL: http://transaction-service:8082
+      NOTIFICATION_SERVICE_URL: http://notification-service:8087
+      SERVICE_ALERTS_ENABLED: "true"
+      LLM_ENABLED: ${LLM_ENABLED:-false}
+      LLM_BASE_URL: ${LLM_BASE_URL:-https://api.openai.com/v1}
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      LLM_MODEL: ${LLM_MODEL:-gpt-4o-mini}
+      SPRING_PROFILES_ACTIVE: json-logs
+    ports:
+      - "8085:8085"
+    depends_on:
+      - prometheus
+      - loki
+      - tempo
+      - api-gateway
+      - notification-service
+    networks: [banking-net]
+
+  banking-ui:
+    build:
+      context: ./banking-ui
+      dockerfile: Dockerfile
+    ports:
+      - "3001:80"
+    depends_on:
+      - api-gateway
+      - keycloak
+    networks: [banking-net]
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.104.0
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes:
+      - ./infra/otel-collector/otel-collector-config.yaml:/etc/otel-collector-config.yaml
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+    networks: [banking-net]
+
+  prometheus:
+    image: prom/prometheus:v2.53.0
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --web.enable-lifecycle
+    volumes:
+      - ./infra/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./infra/prometheus/rules:/etc/prometheus/rules
+    ports:
+      - "9090:9090"
+    networks: [banking-net]
+
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    command:
+      - --config.file=/etc/alertmanager/alertmanager.yml
+    volumes:
+      - ./infra/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml
+    ports:
+      - "9093:9093"
+    networks: [banking-net]
+
+  tempo:
+    image: grafana/tempo:2.5.0
+    command: ["-config.file=/etc/tempo.yaml"]
+    volumes:
+      - ./infra/tempo/tempo.yaml:/etc/tempo.yaml
+    ports:
+      - "3200:3200"
+    networks: [banking-net]
+
+  loki:
+    image: grafana/loki:2.9.8
+    command: ["-config.file=/etc/loki/loki-config.yaml"]
+    volumes:
+      - ./infra/loki/loki-config.yaml:/etc/loki/loki-config.yaml
+    ports:
+      - "3100:3100"
+    networks: [banking-net]
+
+  grafana:
+    image: grafana/grafana:11.1.0
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+    volumes:
+      - ./infra/grafana/provisioning:/etc/grafana/provisioning
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+      - tempo
+      - loki
+      - alertmanager
+    networks: [banking-net]
