@@ -21,7 +21,13 @@ public class SecurityConfig {
                     "/actuator/health/**",
                     "/actuator/prometheus",
                     "/actuator/info",
-                    "/fallback/**"
+                    "/fallback/**",
+                    "/v3/api-docs/**",
+                    "/swagger-ui/**",
+                    "/swagger-ui.html",
+                    "/webjars/**",
+                    "/services/*/v3/api-docs",
+                    "/services/*/v3/api-docs/**"
                 ).permitAll()
                 .anyExchange().authenticated()
             )

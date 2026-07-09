@@ -51,3 +51,10 @@ logging:
   level:
     root: INFO
     com.bankingplatform.opsagent: DEBUG
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+  show-actuator: false

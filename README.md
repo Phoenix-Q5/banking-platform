@@ -46,6 +46,7 @@ docker-compose up -d --build
 |---|---|
 | **Harbor Bank UI** | **http://localhost:3001** |
 | API Gateway | http://localhost:8080 |
+| **Swagger UI (aggregated)** | **http://localhost:8080/swagger-ui.html** |
 | Ops Agent | http://localhost:8085 |
 | Keycloak | http://localhost:8180 |
 | Kafka | localhost:9092 |
@@ -86,5 +87,6 @@ open HarborBank.xcodeproj
 
 - [docs/OPS_AGENT.md](docs/OPS_AGENT.md) — AI ops agent
 - [docs/EVENTS.md](docs/EVENTS.md) — Kafka domain events
+- [docs/postman/Harbor-Bank-API.postman_collection.json](docs/postman/Harbor-Bank-API.postman_collection.json) — Postman collection (all endpoints)
 - [banking-ui/README.md](banking-ui/README.md) — Web UI local dev
 - [apps/ios-harbor-bank/README.md](apps/ios-harbor-bank/README.md) — iOS app

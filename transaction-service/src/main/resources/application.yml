@@ -110,3 +110,10 @@ logging:
 harbor:
   kafka:
     enabled: ${HARBOR_KAFKA_ENABLED:true}
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+  show-actuator: false

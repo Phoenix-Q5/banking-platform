@@ -81,3 +81,10 @@ harbor:
     email-enabled: ${EMAIL_ENABLED:false}
     sms-enabled: ${SMS_ENABLED:false}
     default-channels: ${NOTIFY_DEFAULT_CHANNELS:IN_APP,PUSH}
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+  show-actuator: false

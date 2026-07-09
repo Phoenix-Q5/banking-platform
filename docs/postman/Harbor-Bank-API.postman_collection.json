@@ -1,0 +1,1899 @@
+{
+  "info": {
+    "name": "Harbor Bank API",
+    "description": "Complete Harbor Bank platform API \u2014 gateway-backed banking services and ops agent.\n\nImport this collection, run **Auth \u2192 Get Access Token (demo.customer)**, then call any endpoint.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "opsAgentUrl",
+      "value": "http://localhost:8085"
+    },
+    {
+      "key": "keycloakUrl",
+      "value": "http://localhost:8180"
+    },
+    {
+      "key": "accessToken",
+      "value": ""
+    },
+    {
+      "key": "customerId",
+      "value": "00000000-0000-0000-0000-000000000001"
+    },
+    {
+      "key": "accountId",
+      "value": "00000000-0000-0000-0000-000000000010"
+    },
+    {
+      "key": "toAccountId",
+      "value": "00000000-0000-0000-0000-000000000011"
+    },
+    {
+      "key": "transactionId",
+      "value": "00000000-0000-0000-0000-000000000020"
+    },
+    {
+      "key": "paymentId",
+      "value": "00000000-0000-0000-0000-000000000030"
+    },
+    {
+      "key": "beneficiaryId",
+      "value": "00000000-0000-0000-0000-000000000031"
+    },
+    {
+      "key": "cardId",
+      "value": "00000000-0000-0000-0000-000000000040"
+    },
+    {
+      "key": "loanId",
+      "value": "00000000-0000-0000-0000-000000000050"
+    },
+    {
+      "key": "notificationId",
+      "value": "00000000-0000-0000-0000-000000000060"
+    },
+    {
+      "key": "incidentId",
+      "value": ""
+    },
+    {
+      "key": "actionId",
+      "value": ""
+    },
+    {
+      "key": "deviceToken",
+      "value": "demo-device-token-001"
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "description": "Keycloak token endpoints for Harbor Bank demo users.",
+      "item": [
+        {
+          "name": "Get Access Token (demo.customer)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const json = pm.response.json();",
+                  "  pm.collectionVariables.set('accessToken', json.access_token);",
+                  "  pm.test('Token saved', () => pm.expect(json.access_token).to.be.a('string'));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "client_id",
+                  "value": "banking-web"
+                },
+                {
+                  "key": "grant_type",
+                  "value": "password"
+                },
+                {
+                  "key": "username",
+                  "value": "demo.customer"
+                },
+                {
+                  "key": "password",
+                  "value": "password"
+                },
+                {
+                  "key": "scope",
+                  "value": "openid profile email"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{keycloakUrl}}/realms/banking/protocol/openid-connect/token",
+              "host": [
+                "{{keycloakUrl}}"
+              ],
+              "path": [
+                "realms",
+                "banking",
+                "protocol",
+                "openid-connect",
+                "token"
+              ]
+            },
+            "description": "Obtain a JWT for demo.customer. Token is saved to `accessToken` collection variable."
+          }
+        },
+        {
+          "name": "Get Access Token (demo.admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  pm.collectionVariables.set('accessToken', pm.response.json().access_token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "client_id",
+                  "value": "banking-web"
+                },
+                {
+                  "key": "grant_type",
+                  "value": "password"
+                },
+                {
+                  "key": "username",
+                  "value": "demo.admin"
+                },
+                {
+                  "key": "password",
+                  "value": "password"
+                },
+                {
+                  "key": "scope",
+                  "value": "openid profile email"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{keycloakUrl}}/realms/banking/protocol/openid-connect/token",
+              "host": [
+                "{{keycloakUrl}}"
+              ],
+              "path": [
+                "realms",
+                "banking",
+                "protocol",
+                "openid-connect",
+                "token"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Accounts",
+      "description": "",
+      "item": [
+        {
+          "name": "Create Account",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/accounts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "accounts"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerId\": \"{{customerId}}\",\n  \"currency\": \"USD\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Account",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/accounts/{{accountId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "accounts",
+                "{{accountId}}"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "List Accounts by Customer",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/accounts?customerId={{customerId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "accounts"
+              ],
+              "query": [
+                {
+                  "key": "customerId",
+                  "value": "{{customerId}}",
+                  "description": ""
+                }
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Debit Account (internal S2S)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/accounts/{{accountId}}/debit",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "accounts",
+                "{{accountId}}",
+                "debit"
+              ]
+            },
+            "description": "Service-to-service; permitted without JWT on account-service.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"transactionId\": \"{{transactionId}}\",\n  \"amount\": \"25.00\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Credit Account (internal S2S)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/accounts/{{accountId}}/credit",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "accounts",
+                "{{accountId}}",
+                "credit"
+              ]
+            },
+            "description": "Service-to-service; permitted without JWT on account-service.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"transactionId\": \"{{transactionId}}\",\n  \"amount\": \"25.00\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Account Internal (S2S)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/accounts/internal/{{accountId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "accounts",
+                "internal",
+                "{{accountId}}"
+              ]
+            },
+            "description": "Internal lookup used by transaction-service."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Transactions",
+      "description": "",
+      "item": [
+        {
+          "name": "Transfer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/transactions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "transactions"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fromAccountId\": \"{{accountId}}\",\n  \"toAccountId\": \"{{toAccountId}}\",\n  \"amount\": \"10.00\",\n  \"currency\": \"USD\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Transaction",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/transactions/{{transactionId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "transactions",
+                "{{transactionId}}"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "List Transactions by Account",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/transactions?accountId={{accountId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "transactions"
+              ],
+              "query": [
+                {
+                  "key": "accountId",
+                  "value": "{{accountId}}",
+                  "description": ""
+                }
+              ]
+            },
+            "description": ""
+          }
+        }
+      ]
+    },
+    {
+      "name": "Customers",
+      "description": "",
+      "item": [
+        {
+          "name": "Create Customer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/customers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "customers"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"externalUserId\": \"ext-demo-001\",\n  \"email\": \"new.customer@example.com\",\n  \"firstName\": \"New\",\n  \"lastName\": \"Customer\",\n  \"phone\": \"+15551234567\",\n  \"country\": \"US\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Customer",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/customers/{{customerId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "customers",
+                "{{customerId}}"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Search by Email",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/customers?email=demo.customer@example.com",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "customers"
+              ],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "demo.customer@example.com",
+                  "description": ""
+                }
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Search by Last Name",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/customers?lastName=Customer",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "customers"
+              ],
+              "query": [
+                {
+                  "key": "lastName",
+                  "value": "Customer",
+                  "description": ""
+                }
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "List All Customers",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/customers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "customers"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Update Customer",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/customers/{{customerId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "customers",
+                "{{customerId}}"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"+15559876543\",\n  \"city\": \"Boston\",\n  \"state\": \"MA\",\n  \"postalCode\": \"02101\",\n  \"country\": \"US\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Update KYC",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/customers/{{customerId}}/kyc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "customers",
+                "{{customerId}}",
+                "kyc"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"kycStatus\": \"VERIFIED\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Suspend Customer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/customers/{{customerId}}/suspend",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "customers",
+                "{{customerId}}",
+                "suspend"
+              ]
+            },
+            "description": ""
+          }
+        }
+      ]
+    },
+    {
+      "name": "Payments",
+      "description": "",
+      "item": [
+        {
+          "name": "Create Beneficiary",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/payments/beneficiaries",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "payments",
+                "beneficiaries"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerId\": \"{{customerId}}\",\n  \"nickname\": \"Rent\",\n  \"accountNumber\": \"9876543210\",\n  \"routingNumber\": \"021000021\",\n  \"bankName\": \"Chase\",\n  \"currency\": \"USD\"\n}"
+            }
+          }
+        },
+        {
+          "name": "List Beneficiaries",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/payments/beneficiaries?customerId={{customerId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "payments",
+                "beneficiaries"
+              ],
+              "query": [
+                {
+                  "key": "customerId",
+                  "value": "{{customerId}}",
+                  "description": ""
+                }
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Create Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/payments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "payments"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerId\": \"{{customerId}}\",\n  \"fromAccountId\": \"{{accountId}}\",\n  \"beneficiaryId\": \"{{beneficiaryId}}\",\n  \"paymentType\": \"ACH\",\n  \"amount\": \"150.00\",\n  \"currency\": \"USD\",\n  \"reference\": \"RENT-APR\",\n  \"description\": \"Monthly rent\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Payment",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/payments/{{paymentId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "payments",
+                "{{paymentId}}"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "List Payments by Customer",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/payments?customerId={{customerId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "payments"
+              ],
+              "query": [
+                {
+                  "key": "customerId",
+                  "value": "{{customerId}}",
+                  "description": ""
+                }
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "List Payments by Account",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/payments?accountId={{accountId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "payments"
+              ],
+              "query": [
+                {
+                  "key": "accountId",
+                  "value": "{{accountId}}",
+                  "description": ""
+                }
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Cancel Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/payments/{{paymentId}}/cancel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "payments",
+                "{{paymentId}}",
+                "cancel"
+              ]
+            },
+            "description": ""
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cards",
+      "description": "",
+      "item": [
+        {
+          "name": "Issue Card",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/cards",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "cards"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerId\": \"{{customerId}}\",\n  \"accountId\": \"{{accountId}}\",\n  \"cardType\": \"DEBIT\",\n  \"cardNetwork\": \"VISA\",\n  \"dailyLimit\": \"1000.00\",\n  \"monthlyLimit\": \"10000.00\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Card",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/cards/{{cardId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "cards",
+                "{{cardId}}"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "List Cards by Customer",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/cards?customerId={{customerId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "cards"
+              ],
+              "query": [
+                {
+                  "key": "customerId",
+                  "value": "{{customerId}}",
+                  "description": ""
+                }
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "List Cards by Account",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/cards?accountId={{accountId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "cards"
+              ],
+              "query": [
+                {
+                  "key": "accountId",
+                  "value": "{{accountId}}",
+                  "description": ""
+                }
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Freeze Card",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/cards/{{cardId}}/freeze",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "cards",
+                "{{cardId}}",
+                "freeze"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Unfreeze Card",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/cards/{{cardId}}/unfreeze",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "cards",
+                "{{cardId}}",
+                "unfreeze"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Update Card Limits",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/cards/{{cardId}}/limits",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "cards",
+                "{{cardId}}",
+                "limits"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"dailyLimit\": \"500.00\",\n  \"monthlyLimit\": \"5000.00\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Loans",
+      "description": "",
+      "item": [
+        {
+          "name": "Apply for Loan",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/loans",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "loans"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerId\": \"{{customerId}}\",\n  \"productCode\": \"PERSONAL\",\n  \"principal\": \"10000.00\",\n  \"interestRate\": \"7.50\",\n  \"termMonths\": 36,\n  \"currency\": \"USD\",\n  \"purpose\": \"Home improvement\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Loan",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/loans/{{loanId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "loans",
+                "{{loanId}}"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "List Loans by Customer",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/loans?customerId={{customerId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "loans"
+              ],
+              "query": [
+                {
+                  "key": "customerId",
+                  "value": "{{customerId}}",
+                  "description": ""
+                }
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "List Loans by Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/loans?status=APPLIED",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "loans"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "APPLIED",
+                  "description": ""
+                }
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Loan Decision",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/loans/{{loanId}}/decision",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "loans",
+                "{{loanId}}",
+                "decision"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"decision\": \"APPROVE\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Notifications",
+      "description": "",
+      "item": [
+        {
+          "name": "Create Notification",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notifications"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerId\": \"{{customerId}}\",\n  \"channel\": \"IN_APP\",\n  \"category\": \"GENERAL\",\n  \"title\": \"Hello\",\n  \"body\": \"Test notification from Postman\"\n}"
+            }
+          }
+        },
+        {
+          "name": "List Notifications",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications?customerId={{customerId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notifications"
+              ],
+              "query": [
+                {
+                  "key": "customerId",
+                  "value": "{{customerId}}",
+                  "description": ""
+                }
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Mark Notification Read",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications/{{notificationId}}/read",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notifications",
+                "{{notificationId}}",
+                "read"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Register Device",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications/devices",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notifications",
+                "devices"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerId\": \"{{customerId}}\",\n  \"platform\": \"IOS\",\n  \"token\": \"{{deviceToken}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "List Devices",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications/devices?customerId={{customerId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notifications",
+                "devices"
+              ],
+              "query": [
+                {
+                  "key": "customerId",
+                  "value": "{{customerId}}",
+                  "description": ""
+                }
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Deactivate Device",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications/devices/{{deviceToken}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notifications",
+                "devices",
+                "{{deviceToken}}"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Publish Service Alert (internal)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications/internal/service-alert",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notifications",
+                "internal",
+                "service-alert"
+              ]
+            },
+            "description": "Internal S2S endpoint (ops-agent \u2192 notification-service). No auth required on notification-service.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Service degraded\",\n  \"body\": \"account-service circuit breaker open\",\n  \"category\": \"SERVICE\",\n  \"severity\": \"CRITICAL\",\n  \"incidentId\": \"inc-001\",\n  \"affectedService\": \"account-service\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Audit",
+      "description": "",
+      "item": [
+        {
+          "name": "Create Audit Event",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/audit/events",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "audit",
+                "events"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"actor\": \"demo.admin\",\n  \"action\": \"VIEW\",\n  \"resourceType\": \"ACCOUNT\",\n  \"resourceId\": \"{{accountId}}\",\n  \"customerId\": \"{{customerId}}\",\n  \"details\": \"Viewed account in admin console\",\n  \"ipAddress\": \"127.0.0.1\"\n}"
+            }
+          }
+        },
+        {
+          "name": "List Audit Events (recent)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/audit/events",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "audit",
+                "events"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "List Audit Events by Customer",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/audit/events?customerId={{customerId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "audit",
+                "events"
+              ],
+              "query": [
+                {
+                  "key": "customerId",
+                  "value": "{{customerId}}",
+                  "description": ""
+                }
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "List Audit Events by Resource",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/audit/events?resourceType=ACCOUNT&resourceId={{accountId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "audit",
+                "events"
+              ],
+              "query": [
+                {
+                  "key": "resourceType",
+                  "value": "ACCOUNT",
+                  "description": ""
+                },
+                {
+                  "key": "resourceId",
+                  "value": "{{accountId}}",
+                  "description": ""
+                }
+              ]
+            },
+            "description": ""
+          }
+        }
+      ]
+    },
+    {
+      "name": "Ops Agent",
+      "description": "Ops agent runs on port 8085 (not routed through API gateway).",
+      "item": [
+        {
+          "name": "Health Summary",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{opsAgentUrl}}/api/agent/health-summary",
+              "host": [
+                "{{opsAgentUrl}}"
+              ],
+              "path": [
+                "api",
+                "agent",
+                "health-summary"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "List Tools",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{opsAgentUrl}}/api/agent/tools",
+              "host": [
+                "{{opsAgentUrl}}"
+              ],
+              "path": [
+                "api",
+                "agent",
+                "tools"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Investigate",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{opsAgentUrl}}/api/agent/investigate",
+              "host": [
+                "{{opsAgentUrl}}"
+              ],
+              "path": [
+                "api",
+                "agent",
+                "investigate"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"High error rate on account-service\",\n  \"description\": \"5xx spike in last 10 minutes\",\n  \"service\": \"account-service\",\n  \"category\": \"latency\",\n  \"severity\": \"WARNING\"\n}"
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "List Incidents",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{opsAgentUrl}}/api/agent/incidents",
+              "host": [
+                "{{opsAgentUrl}}"
+              ],
+              "path": [
+                "api",
+                "agent",
+                "incidents"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Get Incident",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{opsAgentUrl}}/api/agent/incidents/{{incidentId}}",
+              "host": [
+                "{{opsAgentUrl}}"
+              ],
+              "path": [
+                "api",
+                "agent",
+                "incidents",
+                "{{incidentId}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Get Incident Report",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{opsAgentUrl}}/api/agent/incidents/{{incidentId}}/report",
+              "host": [
+                "{{opsAgentUrl}}"
+              ],
+              "path": [
+                "api",
+                "agent",
+                "incidents",
+                "{{incidentId}}",
+                "report"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Approve Mitigation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{opsAgentUrl}}/api/agent/incidents/{{incidentId}}/mitigations/{{actionId}}/approve",
+              "host": [
+                "{{opsAgentUrl}}"
+              ],
+              "path": [
+                "api",
+                "agent",
+                "incidents",
+                "{{incidentId}}",
+                "mitigations",
+                "{{actionId}}",
+                "approve"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Alertmanager Webhook",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{opsAgentUrl}}/api/agent/webhooks/alertmanager",
+              "host": [
+                "{{opsAgentUrl}}"
+              ],
+              "path": [
+                "api",
+                "agent",
+                "webhooks",
+                "alertmanager"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"version\": \"4\",\n  \"status\": \"firing\",\n  \"alerts\": [\n    {\n      \"status\": \"firing\",\n      \"labels\": {\n        \"alertname\": \"HighErrorRate\",\n        \"service\": \"account-service\"\n      },\n      \"annotations\": {\n        \"summary\": \"Error rate above threshold\"\n      }\n    }\n  ]\n}"
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Chat",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{opsAgentUrl}}/api/agent/chat",
+              "host": [
+                "{{opsAgentUrl}}"
+              ],
+              "path": [
+                "api",
+                "agent",
+                "chat"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"Why is account-service returning 503?\",\n  \"incidentId\": \"{{incidentId}}\"\n}"
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
