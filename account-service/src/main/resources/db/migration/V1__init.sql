@@ -3,7 +3,7 @@ CREATE TABLE accounts (
     account_number  VARCHAR(34) NOT NULL UNIQUE,
     customer_id     UUID NOT NULL,
     balance         NUMERIC(19,4) NOT NULL DEFAULT 0,
-    currency        CHAR(3) NOT NULL,
+    currency        VARCHAR(3) NOT NULL,
     status          VARCHAR(20) NOT NULL,
     version         BIGINT NOT NULL DEFAULT 0,
     created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),

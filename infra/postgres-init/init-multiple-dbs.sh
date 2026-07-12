@@ -1,4 +1,4 @@
-#!/bin/bash
+﻿#!/bin/bash
 # Creates one database per service. The postgres image runs every *.sh in
 # /docker-entrypoint-initdb.d/ on first startup only (i.e. when the data
 # volume is empty).

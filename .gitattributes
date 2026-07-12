@@ -1,0 +1,10 @@
+# Always use LF for shell scripts so they work inside Linux containers
+*.sh text eol=lf
+
+# Keep YAML/config files with LF too
+*.yml text eol=lf
+*.yaml text eol=lf
+*.json text eol=lf
+*.xml text eol=lf
+*.properties text eol=lf
+*.sql text eol=lf

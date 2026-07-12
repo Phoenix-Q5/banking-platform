@@ -31,6 +31,8 @@ services:
     environment:
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_HOSTNAME_URL: http://localhost:8180
+      KC_HOSTNAME_ADMIN_URL: http://localhost:8180
     ports:
       - "8180:8080"
     volumes:
@@ -38,7 +40,7 @@ services:
     networks: [banking-net]
 
   kafka:
-    image: bitnami/kafka:3.7
+    image: docker.io/bitnamilegacy/kafka:3.7.0
     ports:
       - "9092:9092"
     environment:
@@ -68,7 +70,8 @@ services:
       DB_NAME: accountdb
       DB_USER: banking
       DB_PASSWORD: banking
-      KEYCLOAK_ISSUER_URI: http://keycloak:8080/realms/banking
+      KEYCLOAK_ISSUER_URI: http://localhost:8180/realms/banking
+      KEYCLOAK_JWK_URI: http://keycloak:8080/realms/banking/protocol/openid-connect/certs
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318/v1/traces
       SPRING_PROFILES_ACTIVE: json-logs
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
@@ -94,7 +97,8 @@ services:
       DB_NAME: transactiondb
       DB_USER: banking
       DB_PASSWORD: banking
-      KEYCLOAK_ISSUER_URI: http://keycloak:8080/realms/banking
+      KEYCLOAK_ISSUER_URI: http://localhost:8180/realms/banking
+      KEYCLOAK_JWK_URI: http://keycloak:8080/realms/banking/protocol/openid-connect/certs
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318/v1/traces
       SPRING_PROFILES_ACTIVE: json-logs
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
@@ -123,7 +127,8 @@ services:
       DB_NAME: customerdb
       DB_USER: banking
       DB_PASSWORD: banking
-      KEYCLOAK_ISSUER_URI: http://keycloak:8080/realms/banking
+      KEYCLOAK_ISSUER_URI: http://localhost:8180/realms/banking
+      KEYCLOAK_JWK_URI: http://keycloak:8080/realms/banking/protocol/openid-connect/certs
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318/v1/traces
       SPRING_PROFILES_ACTIVE: json-logs
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
@@ -149,7 +154,8 @@ services:
       DB_NAME: paymentdb
       DB_USER: banking
       DB_PASSWORD: banking
-      KEYCLOAK_ISSUER_URI: http://keycloak:8080/realms/banking
+      KEYCLOAK_ISSUER_URI: http://localhost:8180/realms/banking
+      KEYCLOAK_JWK_URI: http://keycloak:8080/realms/banking/protocol/openid-connect/certs
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318/v1/traces
       SPRING_PROFILES_ACTIVE: json-logs
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
@@ -175,7 +181,8 @@ services:
       DB_NAME: carddb
       DB_USER: banking
       DB_PASSWORD: banking
-      KEYCLOAK_ISSUER_URI: http://keycloak:8080/realms/banking
+      KEYCLOAK_ISSUER_URI: http://localhost:8180/realms/banking
+      KEYCLOAK_JWK_URI: http://keycloak:8080/realms/banking/protocol/openid-connect/certs
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318/v1/traces
       SPRING_PROFILES_ACTIVE: json-logs
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
@@ -201,7 +208,8 @@ services:
       DB_NAME: notificationdb
       DB_USER: banking
       DB_PASSWORD: banking
-      KEYCLOAK_ISSUER_URI: http://keycloak:8080/realms/banking
+      KEYCLOAK_ISSUER_URI: http://localhost:8180/realms/banking
+      KEYCLOAK_JWK_URI: http://keycloak:8080/realms/banking/protocol/openid-connect/certs
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318/v1/traces
       SPRING_PROFILES_ACTIVE: json-logs
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
@@ -230,7 +238,8 @@ services:
       DB_NAME: auditdb
       DB_USER: banking
       DB_PASSWORD: banking
-      KEYCLOAK_ISSUER_URI: http://keycloak:8080/realms/banking
+      KEYCLOAK_ISSUER_URI: http://localhost:8180/realms/banking
+      KEYCLOAK_JWK_URI: http://keycloak:8080/realms/banking/protocol/openid-connect/certs
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318/v1/traces
       SPRING_PROFILES_ACTIVE: json-logs
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
@@ -257,7 +266,8 @@ services:
       DB_NAME: loandb
       DB_USER: banking
       DB_PASSWORD: banking
-      KEYCLOAK_ISSUER_URI: http://keycloak:8080/realms/banking
+      KEYCLOAK_ISSUER_URI: http://localhost:8180/realms/banking
+      KEYCLOAK_JWK_URI: http://keycloak:8080/realms/banking/protocol/openid-connect/certs
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318/v1/traces
       SPRING_PROFILES_ACTIVE: json-logs
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
@@ -286,7 +296,8 @@ services:
       NOTIFICATION_SERVICE_URI: http://notification-service:8087
       AUDIT_SERVICE_URI: http://audit-service:8088
       LOAN_SERVICE_URI: http://loan-service:8089
-      KEYCLOAK_ISSUER_URI: http://keycloak:8080/realms/banking
+      KEYCLOAK_ISSUER_URI: http://localhost:8180/realms/banking
+      KEYCLOAK_JWK_URI: http://keycloak:8080/realms/banking/protocol/openid-connect/certs
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318/v1/traces
       SPRING_PROFILES_ACTIVE: json-logs
     ports:

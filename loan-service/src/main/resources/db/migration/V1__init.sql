@@ -8,7 +8,7 @@ CREATE TABLE loans (
     term_months INT NOT NULL,
     monthly_payment NUMERIC(19,4) NOT NULL,
     outstanding_balance NUMERIC(19,4) NOT NULL,
-    currency CHAR(3) NOT NULL,
+    currency VARCHAR(3) NOT NULL,
     status VARCHAR(30) NOT NULL,
     purpose VARCHAR(200),
     created_at TIMESTAMPTZ NOT NULL,

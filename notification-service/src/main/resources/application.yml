@@ -41,6 +41,7 @@ spring:
       resourceserver:
         jwt:
           issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8180/realms/banking}
+          jwk-set-uri: ${KEYCLOAK_JWK_URI:http://localhost:8180/realms/banking/protocol/openid-connect/certs}
 
 management:
   endpoints:

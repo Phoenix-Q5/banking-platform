@@ -6,7 +6,7 @@ CREATE TABLE beneficiaries (
     account_number VARCHAR(64) NOT NULL,
     routing_number VARCHAR(32),
     bank_name VARCHAR(120),
-    currency CHAR(3) NOT NULL DEFAULT 'USD',
+    currency VARCHAR(3) NOT NULL DEFAULT 'USD',
     status VARCHAR(20) NOT NULL,
     created_at TIMESTAMPTZ NOT NULL
 );
@@ -19,7 +19,7 @@ CREATE TABLE payments (
     beneficiary_id UUID,
     payment_type VARCHAR(30) NOT NULL,
     amount NUMERIC(19,4) NOT NULL,
-    currency CHAR(3) NOT NULL,
+    currency VARCHAR(3) NOT NULL,
     status VARCHAR(30) NOT NULL,
     reference VARCHAR(120),
     description TEXT,

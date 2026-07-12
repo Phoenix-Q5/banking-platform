@@ -12,7 +12,7 @@ CREATE TABLE customers (
     city            VARCHAR(100),
     state           VARCHAR(100),
     postal_code     VARCHAR(20),
-    country         CHAR(2) NOT NULL DEFAULT 'US',
+    country         VARCHAR(2) NOT NULL DEFAULT 'US',
     kyc_status      VARCHAR(30) NOT NULL,
     status          VARCHAR(30) NOT NULL,
     created_at      TIMESTAMPTZ NOT NULL,

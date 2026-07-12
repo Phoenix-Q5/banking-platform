@@ -3,7 +3,7 @@ CREATE TABLE transactions (
     from_account_id UUID NOT NULL,
     to_account_id   UUID NOT NULL,
     amount          NUMERIC(19,4) NOT NULL,
-    currency        CHAR(3) NOT NULL,
+    currency        VARCHAR(3) NOT NULL,
     status          VARCHAR(20) NOT NULL,
     failure_reason  TEXT,
     created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
