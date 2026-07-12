@@ -49,14 +49,14 @@ public class NotificationController {
     }
 
     @GetMapping
-    public List<NotificationResponse> list(@RequestParam UUID customerId) {
+    public List<NotificationResponse> list(@RequestParam("customerId") UUID customerId) {
         return repository.findByCustomerIdOrderByCreatedAtDesc(customerId).stream()
             .map(NotificationResponse::from)
             .toList();
     }
 
     @PostMapping("/{id}/read")
-    public NotificationResponse markRead(@PathVariable UUID id) {
+    public NotificationResponse markRead(@PathVariable("id") UUID id) {
         Notification n = repository.findById(id).orElseThrow(() -> new NotFoundException("Notification not found: " + id));
         n.setStatus(Notification.Status.READ);
         n.setReadAt(Instant.now());
@@ -78,7 +78,7 @@ public class NotificationController {
 
     @DeleteMapping("/devices/{token}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deactivateDevice(@PathVariable String token) {
+    public void deactivateDevice(@PathVariable("token") String token) {
         deviceTokenRepository.findByToken(token).ifPresent(d -> {
             d.setActive(false);
             deviceTokenRepository.save(d);
@@ -86,7 +86,7 @@ public class NotificationController {
     }
 
     @GetMapping("/devices")
-    public List<DeviceTokenResponse> listDevices(@RequestParam UUID customerId) {
+    public List<DeviceTokenResponse> listDevices(@RequestParam("customerId") UUID customerId) {
         return deviceTokenRepository.findByCustomerIdAndActiveTrue(customerId).stream()
             .map(DeviceTokenResponse::from)
             .toList();

@@ -52,18 +52,18 @@ public class AccountController {
     }
 
     @GetMapping("/{id}")
-    public AccountResponse getAccount(@PathVariable UUID id) {
+    public AccountResponse getAccount(@PathVariable("id") UUID id) {
         return AccountResponse.from(findOrThrow(id));
     }
 
     /** Internal S2S lookup used by transaction-service (private network). */
     @GetMapping("/internal/{id}")
-    public AccountResponse getAccountInternal(@PathVariable UUID id) {
+    public AccountResponse getAccountInternal(@PathVariable("id") UUID id) {
         return AccountResponse.from(findOrThrow(id));
     }
 
     @GetMapping
-    public List<AccountResponse> listByCustomer(@RequestParam UUID customerId) {
+    public List<AccountResponse> listByCustomer(@RequestParam("customerId") UUID customerId) {
         return accountRepository.findByCustomerId(customerId).stream()
             .map(AccountResponse::from)
             .toList();
@@ -71,7 +71,7 @@ public class AccountController {
 
     @PostMapping("/{id}/debit")
     @Transactional
-    public ResponseEntity<AccountResponse> debit(@PathVariable UUID id, @Valid @RequestBody BalanceAdjustmentRequest request) {
+    public ResponseEntity<AccountResponse> debit(@PathVariable("id") UUID id, @Valid @RequestBody BalanceAdjustmentRequest request) {
         Account account = accountRepository.findByIdForUpdate(id).orElseThrow(() -> new AccountNotFoundException(id));
         if (account.getBalance().compareTo(request.amount()) < 0) {
             log.warn("debit_rejected_insufficient_funds accountId={} txnId={} amount={}", id, request.transactionId(), request.amount());
@@ -85,7 +85,7 @@ public class AccountController {
 
     @PostMapping("/{id}/credit")
     @Transactional
-    public ResponseEntity<AccountResponse> credit(@PathVariable UUID id, @Valid @RequestBody BalanceAdjustmentRequest request) {
+    public ResponseEntity<AccountResponse> credit(@PathVariable("id") UUID id, @Valid @RequestBody BalanceAdjustmentRequest request) {
         Account account = accountRepository.findByIdForUpdate(id).orElseThrow(() -> new AccountNotFoundException(id));
         account.setBalance(account.getBalance().add(request.amount()));
         Account saved = accountRepository.save(account);

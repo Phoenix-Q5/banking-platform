@@ -43,19 +43,19 @@ public class CardController {
     }
 
     @GetMapping("/{id}")
-    public CardResponse get(@PathVariable UUID id) {
+    public CardResponse get(@PathVariable("id") UUID id) {
         return CardResponse.from(repository.findById(id).orElseThrow(() -> new NotFoundException("Card not found: " + id)));
     }
 
     @GetMapping
-    public List<CardResponse> list(@RequestParam(required=false) UUID customerId, @RequestParam(required=false) UUID accountId) {
+    public List<CardResponse> list(@RequestParam(name="customerId", required=false) UUID customerId, @RequestParam(name="accountId", required=false) UUID accountId) {
         if (customerId != null) return repository.findByCustomerId(customerId).stream().map(CardResponse::from).toList();
         if (accountId != null) return repository.findByAccountId(accountId).stream().map(CardResponse::from).toList();
         return repository.findAll().stream().map(CardResponse::from).toList();
     }
 
     @PostMapping("/{id}/freeze")
-    public CardResponse freeze(@PathVariable UUID id) {
+    public CardResponse freeze(@PathVariable("id") UUID id) {
         Card card = repository.findById(id).orElseThrow(() -> new NotFoundException("Card not found: " + id));
         card.setStatus(Card.Status.FROZEN);
         Card saved = repository.save(card);
@@ -64,7 +64,7 @@ public class CardController {
     }
 
     @PostMapping("/{id}/unfreeze")
-    public CardResponse unfreeze(@PathVariable UUID id) {
+    public CardResponse unfreeze(@PathVariable("id") UUID id) {
         Card card = repository.findById(id).orElseThrow(() -> new NotFoundException("Card not found: " + id));
         if (card.getStatus() == Card.Status.CANCELLED) throw new IllegalArgumentException("Cancelled cards cannot be unfrozen");
         card.setStatus(Card.Status.ACTIVE);
@@ -74,7 +74,7 @@ public class CardController {
     }
 
     @PutMapping("/{id}/limits")
-    public CardResponse updateLimits(@PathVariable UUID id, @Valid @RequestBody UpdateLimitsRequest request) {
+    public CardResponse updateLimits(@PathVariable("id") UUID id, @Valid @RequestBody UpdateLimitsRequest request) {
         Card card = repository.findById(id).orElseThrow(() -> new NotFoundException("Card not found: " + id));
         card.setDailyLimit(request.dailyLimit());
         card.setMonthlyLimit(request.monthlyLimit());

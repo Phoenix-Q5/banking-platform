@@ -42,19 +42,19 @@ public class LoanController {
     }
 
     @GetMapping("/{id}")
-    public LoanResponse get(@PathVariable UUID id){
+    public LoanResponse get(@PathVariable("id") UUID id){
         return LoanResponse.from(repository.findById(id).orElseThrow(() -> new NotFoundException("Loan not found: "+id)));
     }
 
     @GetMapping
-    public List<LoanResponse> list(@RequestParam(required=false) UUID customerId, @RequestParam(required=false) String status){
+    public List<LoanResponse> list(@RequestParam(name="customerId", required=false) UUID customerId, @RequestParam(name="status", required=false) String status){
         if (customerId != null) return repository.findByCustomerIdOrderByCreatedAtDesc(customerId).stream().map(LoanResponse::from).toList();
         if (status != null) return repository.findByStatus(Loan.Status.valueOf(status.toUpperCase(Locale.ROOT))).stream().map(LoanResponse::from).toList();
         return repository.findAll().stream().map(LoanResponse::from).toList();
     }
 
     @PostMapping("/{id}/decision")
-    public LoanResponse decide(@PathVariable UUID id, @Valid @RequestBody LoanDecisionRequest request){
+    public LoanResponse decide(@PathVariable("id") UUID id, @Valid @RequestBody LoanDecisionRequest request){
         Loan loan = repository.findById(id).orElseThrow(() -> new NotFoundException("Loan not found: "+id));
         String previous = loan.getStatus().name();
         String decision = request.decision().toUpperCase(Locale.ROOT);

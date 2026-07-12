@@ -99,13 +99,13 @@ public class AgentController {
     }
 
     @GetMapping("/incidents/{id}")
-    public Incident incident(@PathVariable String id) {
+    public Incident incident(@PathVariable("id") String id) {
         return incidentStore.findById(id)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Incident not found"));
     }
 
     @GetMapping("/incidents/{id}/report")
-    public AgentReport report(@PathVariable String id) {
+    public AgentReport report(@PathVariable("id") String id) {
         try {
             return investigationService.reportFor(id);
         } catch (IllegalArgumentException ex) {
@@ -114,7 +114,7 @@ public class AgentController {
     }
 
     @PostMapping("/incidents/{id}/mitigations/{actionId}/approve")
-    public MitigationAction approve(@PathVariable String id, @PathVariable String actionId) {
+    public MitigationAction approve(@PathVariable("id") String id, @PathVariable("actionId") String actionId) {
         Incident incident = incidentStore.findById(id)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Incident not found"));
         try {

@@ -52,15 +52,15 @@ public class CustomerController {
     }
 
     @GetMapping("/{id}")
-    public CustomerResponse get(@PathVariable UUID id) {
+    public CustomerResponse get(@PathVariable("id") UUID id) {
         return CustomerResponse.from(find(id));
     }
 
     @GetMapping
     public List<CustomerResponse> search(
-        @RequestParam(required = false) String email,
-        @RequestParam(required = false) String lastName,
-        @RequestParam(required = false) String externalUserId
+        @RequestParam(name = "email", required = false) String email,
+        @RequestParam(name = "lastName", required = false) String lastName,
+        @RequestParam(name = "externalUserId", required = false) String externalUserId
     ) {
         if (email != null && !email.isBlank()) {
             return repository.findByEmailIgnoreCase(email)
@@ -83,7 +83,7 @@ public class CustomerController {
     }
 
     @PutMapping("/{id}")
-    public CustomerResponse update(@PathVariable UUID id, @Valid @RequestBody UpdateCustomerRequest request) {
+    public CustomerResponse update(@PathVariable("id") UUID id, @Valid @RequestBody UpdateCustomerRequest request) {
         Customer customer = find(id);
         if (request.phone() != null) customer.setPhone(request.phone());
         if (request.addressLine1() != null) customer.setAddressLine1(request.addressLine1());
@@ -96,7 +96,7 @@ public class CustomerController {
     }
 
     @PostMapping("/{id}/kyc")
-    public CustomerResponse updateKyc(@PathVariable UUID id, @Valid @RequestBody KycUpdateRequest request) {
+    public CustomerResponse updateKyc(@PathVariable("id") UUID id, @Valid @RequestBody KycUpdateRequest request) {
         Customer customer = find(id);
         customer.setKycStatus(Customer.KycStatus.valueOf(request.kycStatus().toUpperCase(Locale.ROOT)));
         Customer saved = repository.save(customer);
@@ -105,7 +105,7 @@ public class CustomerController {
     }
 
     @PostMapping("/{id}/suspend")
-    public CustomerResponse suspend(@PathVariable UUID id) {
+    public CustomerResponse suspend(@PathVariable("id") UUID id) {
         Customer customer = find(id);
         customer.setStatus(Customer.Status.SUSPENDED);
         return CustomerResponse.from(repository.save(customer));

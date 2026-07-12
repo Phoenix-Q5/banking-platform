@@ -48,7 +48,7 @@ public class PaymentController {
     }
 
     @GetMapping("/beneficiaries")
-    public List<BeneficiaryResponse> listBeneficiaries(@RequestParam UUID customerId) {
+    public List<BeneficiaryResponse> listBeneficiaries(@RequestParam("customerId") UUID customerId) {
         return beneficiaryRepository.findByCustomerId(customerId).stream().map(BeneficiaryResponse::from).toList();
     }
 
@@ -83,14 +83,14 @@ public class PaymentController {
     }
 
     @GetMapping("/{id}")
-    public PaymentResponse get(@PathVariable UUID id) {
+    public PaymentResponse get(@PathVariable("id") UUID id) {
         return PaymentResponse.from(paymentRepository.findById(id)
             .orElseThrow(() -> new NotFoundException("Payment not found: " + id)));
     }
 
     @GetMapping
-    public List<PaymentResponse> list(@RequestParam(required = false) UUID customerId,
-                                      @RequestParam(required = false) UUID accountId) {
+    public List<PaymentResponse> list(@RequestParam(name = "customerId", required = false) UUID customerId,
+                                      @RequestParam(name = "accountId", required = false) UUID accountId) {
         if (customerId != null) {
             return paymentRepository.findByCustomerIdOrderByCreatedAtDesc(customerId).stream().map(PaymentResponse::from).toList();
         }
@@ -101,7 +101,7 @@ public class PaymentController {
     }
 
     @PostMapping("/{id}/cancel")
-    public PaymentResponse cancel(@PathVariable UUID id) {
+    public PaymentResponse cancel(@PathVariable("id") UUID id) {
         Payment payment = paymentRepository.findById(id)
             .orElseThrow(() -> new NotFoundException("Payment not found: " + id));
         if (payment.getStatus() != Payment.Status.SCHEDULED && payment.getStatus() != Payment.Status.PENDING) {

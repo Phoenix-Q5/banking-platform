@@ -82,13 +82,13 @@ public class TransactionController {
     }
 
     @GetMapping("/{id}")
-    public TransactionResponse getTransaction(@PathVariable UUID id) {
+    public TransactionResponse getTransaction(@PathVariable("id") UUID id) {
         Transaction txn = transactionRepository.findById(id).orElseThrow(() -> new TransactionNotFoundException(id));
         return TransactionResponse.from(txn);
     }
 
     @GetMapping
-    public List<TransactionResponse> listByAccount(@RequestParam UUID accountId) {
+    public List<TransactionResponse> listByAccount(@RequestParam("accountId") UUID accountId) {
         return transactionRepository.findByFromAccountIdOrToAccountId(accountId, accountId).stream()
             .map(TransactionResponse::from)
             .toList();
