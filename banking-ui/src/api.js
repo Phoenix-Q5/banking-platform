@@ -71,6 +71,10 @@ export const api = {
   getCustomer: (token, id) => request(`/api/customers/${id}`, { token }),
   updateKyc: (token, id, kycStatus) =>
     request(`/api/customers/${id}/kyc`, { method: 'POST', token, body: { kycStatus } }),
+  createCustomer: (token, payload) =>
+    request('/api/customers', { method: 'POST', token, body: payload }),
+  updateCustomer: (token, id, payload) =>
+    request(`/api/customers/${id}`, { method: 'PUT', token, body: payload }),
   suspendCustomer: (token, id) =>
     request(`/api/customers/${id}/suspend`, { method: 'POST', token }),
 

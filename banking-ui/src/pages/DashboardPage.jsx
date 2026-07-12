@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { api } from '../api'
 import { useAuth } from '../auth'
 
@@ -107,7 +108,10 @@ export default function DashboardPage() {
           {accounts.length === 0 && <div className="empty">No accounts yet.</div>}
           {accounts.map((a) => (
             <div className="stat" key={a.id}>
-              <div className="label">{a.accountNumber} · <span className={`badge ${a.status}`}>{a.status}</span></div>
+              <div className="label">
+                <Link to={`/accounts/${a.id}`} className="account-link">{a.accountNumber}</Link>
+                {' · '}<span className={`badge ${a.status}`}>{a.status}</span>
+              </div>
               <div className="value">{money(a.balance, a.currency)}</div>
             </div>
           ))}
