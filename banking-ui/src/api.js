@@ -62,6 +62,14 @@ async function request(path, { method = 'GET', token, body } = {}) {
   return res.json()
 }
 
+export const publicApi = {
+  // No token required — open endpoints
+  registerCustomer: (payload) =>
+    request('/api/customers', { method: 'POST', body: payload }),
+  listCardOffers: () =>
+    request('/api/cards/offers'),
+}
+
 export const api = {
   // customers
   listCustomers: (token, params = {}) => {

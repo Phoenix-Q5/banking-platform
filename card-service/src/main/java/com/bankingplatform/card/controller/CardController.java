@@ -23,6 +23,74 @@ public class CardController {
         this.eventPublisher = eventPublisher;
     }
 
+    /** Public endpoint — no authentication required. */
+    @GetMapping("/offers")
+    public List<CardOfferResponse> offers() {
+        return List.of(
+            new CardOfferResponse(
+                "DEBIT", "VISA",
+                "Harbor Everyday Debit",
+                "Simple, free spending from your checking account",
+                List.of(
+                    "No annual fee",
+                    "Zero foreign transaction fees",
+                    "Instant freeze/unfreeze via app",
+                    "Real-time purchase notifications",
+                    "Up to $500 daily ATM withdrawals"
+                ),
+                new BigDecimal("500.00"), new BigDecimal("5000.00"),
+                "$0", "N/A", "N/A", "N/A"
+            ),
+            new CardOfferResponse(
+                "CREDIT", "VISA",
+                "Harbor Rewards Visa",
+                "Earn 1.5 % cash back on every purchase",
+                List.of(
+                    "1.5 % unlimited cash back",
+                    "No annual fee",
+                    "0 % intro APR for 12 months on purchases",
+                    "Travel accident insurance",
+                    "24/7 concierge support",
+                    "Zero liability fraud protection"
+                ),
+                new BigDecimal("1000.00"), new BigDecimal("10000.00"),
+                "$0", "1.5 % cash back", "0 % for 12 months", "19.99 % – 27.99 % variable"
+            ),
+            new CardOfferResponse(
+                "CREDIT", "MASTERCARD",
+                "Harbor Platinum Mastercard",
+                "Premium rewards with travel perks",
+                List.of(
+                    "2 % cash back on travel & dining",
+                    "1 % cash back on all other purchases",
+                    "$100 annual travel credit",
+                    "Global airport lounge access (2 visits/year)",
+                    "Cell phone protection up to $800",
+                    "Extended warranty on purchases"
+                ),
+                new BigDecimal("2000.00"), new BigDecimal("20000.00"),
+                "$95/year", "Up to 2 % cash back", "0 % for 15 months", "21.49 % – 29.49 % variable"
+            ),
+            new CardOfferResponse(
+                "CREDIT", "AMEX",
+                "Harbor Elite Amex",
+                "Our most exclusive card with unlimited rewards",
+                List.of(
+                    "3 % cash back on dining & groceries",
+                    "2 % cash back on travel",
+                    "1 % cash back on everything else",
+                    "Unlimited airport lounge access",
+                    "$200 annual statement credit",
+                    "Concierge & travel booking service",
+                    "Purchase protection up to $10,000",
+                    "No foreign transaction fees"
+                ),
+                new BigDecimal("5000.00"), new BigDecimal("50000.00"),
+                "$249/year", "Up to 3 % cash back", "N/A", "24.99 % – 29.99 % variable"
+            )
+        );
+    }
+
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public CardResponse issue(@Valid @RequestBody IssueCardRequest request) {

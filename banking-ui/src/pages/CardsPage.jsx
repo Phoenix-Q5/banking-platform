@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api'
 import { useAuth } from '../auth'
+import CardArt from '../components/CardArt'
 
 function money(amount, currency = 'USD') {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(Number(amount || 0))
@@ -31,10 +32,7 @@ export default function CardsPage() {
   useEffect(() => { load() }, [])
 
   const issue = async () => {
-    if (!accounts[0]) {
-      setError('Open an account first from Overview')
-      return
-    }
+    if (!accounts[0]) { setError('Open an account first from Overview'); return }
     setBusy(true)
     setError('')
     try {
@@ -68,34 +66,74 @@ export default function CardsPage() {
     }
   }
 
+  const holderName = [session.name].filter(Boolean).join(' ').toUpperCase() || 'HARBOR MEMBER'
+
   return (
     <div>
       <h1 className="page-title">Cards</h1>
-      <p className="page-sub">Issue debit cards, set limits, and freeze instantly.</p>
+      <p className="page-sub">Your Harbor Bank cards — freeze, unfreeze, and manage limits instantly.</p>
+
       {error && <div className="error" style={{ marginBottom: 12 }}>{error}</div>}
-      <div className="actions" style={{ marginBottom: 16 }}>
-        <button className="primary" disabled={busy} onClick={issue}>Issue debit card</button>
+
+      <div className="actions" style={{ marginBottom: 24 }}>
+        <button className="primary" disabled={busy} onClick={issue}>+ Issue debit card</button>
       </div>
-      <section className="panel">
-        <h2>Your cards</h2>
-        {cards.length === 0 ? <div className="empty">No cards yet.</div> : (
-          <table className="table">
-            <thead><tr><th>Card</th><th>Network</th><th>Limits</th><th>Expires</th><th>Status</th><th></th></tr></thead>
-            <tbody>
-              {cards.map((c) => (
-                <tr key={c.id}>
-                  <td>•••• {c.cardNumberLast4} <span className="muted">({c.cardType})</span></td>
-                  <td>{c.cardNetwork}</td>
-                  <td>{money(c.dailyLimit)} / day · {money(c.monthlyLimit)} / mo</td>
-                  <td>{c.expiresOn}</td>
-                  <td><span className={`badge ${c.status}`}>{c.status}</span></td>
-                  <td><button className="secondary" disabled={busy} onClick={() => toggleFreeze(c)}>{c.status === 'FROZEN' ? 'Unfreeze' : 'Freeze'}</button></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </section>
+
+      {cards.length === 0 ? (
+        <section className="panel" style={{ textAlign: 'center', padding: '40px 24px', color: 'var(--muted)' }}>
+          <div style={{ fontSize: '2.5rem', marginBottom: 12 }}>💳</div>
+          <div style={{ fontWeight: 600, marginBottom: 6 }}>No cards yet</div>
+          <div style={{ fontSize: '0.9rem' }}>Issue your first debit card above, or visit <strong>Products</strong> to browse all card options.</div>
+        </section>
+      ) : (
+        <div className="cards-gallery">
+          {cards.map((card) => (
+            <div className="card-tile" key={card.id}>
+              {/* Physical card render */}
+              <CardArt
+                cardType={card.cardType}
+                cardNetwork={card.cardNetwork}
+                last4={card.cardNumberLast4}
+                holderName={holderName}
+                expiresOn={card.expiresOn}
+                status={card.status}
+              />
+
+              {/* Metadata + controls */}
+              <div className="card-tile-meta">
+                <div className="card-meta-row">
+                  <span className="card-meta-label">Type</span>
+                  <span className="card-meta-value">{card.cardType} · {card.cardNetwork}</span>
+                </div>
+                <div className="card-meta-row">
+                  <span className="card-meta-label">Daily limit</span>
+                  <span className="card-meta-value">{money(card.dailyLimit)}</span>
+                </div>
+                <div className="card-meta-row">
+                  <span className="card-meta-label">Monthly limit</span>
+                  <span className="card-meta-value">{money(card.monthlyLimit)}</span>
+                </div>
+                <div className="card-meta-row">
+                  <span className="card-meta-label">Status</span>
+                  <span className={`badge ${card.status}`}>{card.status}</span>
+                </div>
+                <div style={{ marginTop: 4 }}>
+                  {card.status !== 'CANCELLED' && card.status !== 'EXPIRED' && (
+                    <button
+                      className={card.status === 'FROZEN' ? 'primary' : 'secondary'}
+                      style={{ width: '100%' }}
+                      disabled={busy}
+                      onClick={() => toggleFreeze(card)}
+                    >
+                      {card.status === 'FROZEN' ? '🔓 Unfreeze card' : '🔒 Freeze card'}
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

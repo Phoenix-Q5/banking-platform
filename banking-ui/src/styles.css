@@ -540,6 +540,82 @@ button:disabled {
 /* ── Required field marker ───────────────────────────── */
 .req { color: var(--danger); }
 
+/* ── Bank card art ───────────────────────────────────── */
+.bank-card-art {
+  cursor: default;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.bank-card-art:hover {
+  transform: translateY(-4px) rotate(0.4deg);
+  box-shadow: 0 16px 48px rgba(0,0,0,0.34), 0 4px 12px rgba(0,0,0,0.2) !important;
+}
+
+/* ── Cards gallery grid ──────────────────────────────── */
+.cards-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 28px;
+  margin-top: 12px;
+}
+
+.card-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.card-tile-meta {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  backdrop-filter: blur(8px);
+}
+
+.card-meta-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+}
+.card-meta-label { color: var(--muted); }
+.card-meta-value { font-weight: 600; color: var(--navy); }
+
+/* ── Account cards gallery ───────────────────────────── */
+.accounts-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+  margin-top: 4px;
+}
+
+/* ── Card offer tile (uses CardArt mini) ─────────────── */
+.offer-tile {
+  display: flex;
+  flex-direction: column;
+  background: var(--panel);
+  border: 1px solid rgba(217,226,236,0.95);
+  box-shadow: var(--shadow);
+  border-radius: 4px;
+  overflow: hidden;
+  backdrop-filter: blur(8px);
+}
+.offer-tile-art {
+  padding: 20px 20px 16px;
+  background: rgba(0,0,0,0.03);
+  display: flex;
+  justify-content: center;
+}
+.offer-tile-body {
+  padding: 16px 20px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
 /* ── Clickable account number ────────────────────────── */
 a.account-link {
   color: var(--sea);

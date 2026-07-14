@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../api'
 import { useAuth } from '../auth'
+import CardArt from '../components/CardArt'
+import AccountCard from '../components/AccountCard'
 
 function money(amount, currency = 'USD') {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(Number(amount || 0))
@@ -218,24 +220,20 @@ export default function ProductsPage() {
         </div>
         <div className="product-grid three">
           {CARDS.map((card) => (
-            <div className="product-card" key={card.id}>
-              <div className="product-card-art" style={{ background: `linear-gradient(135deg, ${card.accent} 0%, rgba(16,42,67,0.9) 100%)` }}>
-                <div className="card-chip" />
-                <div className="card-title-art">{card.title}</div>
-                <div className="card-network-art">{card.network}</div>
+            <div className="offer-tile" key={card.id}>
+              <div className="offer-tile-art">
+                <div style={{ width: '100%' }}>
+                  <CardArt cardType={card.type} cardNetwork={card.network} productName={card.title} mini />
+                </div>
               </div>
-              <div className="product-card-body">
+              <div className="offer-tile-body">
                 <div className="product-card-name">{card.title}</div>
                 <div className="product-card-sub">{card.subtitle}</div>
-                <ul className="product-perks">
+                <ul className="product-perks" style={{ flex: 1 }}>
                   {card.perks.map((p) => <li key={p}>{p}</li>)}
                 </ul>
                 <div className="actions" style={{ marginTop: 14 }}>
-                  <button
-                    className="primary"
-                    disabled={busy === card.id}
-                    onClick={() => applyForCard(card)}
-                  >
+                  <button className="primary" disabled={busy === card.id} onClick={() => applyForCard(card)}>
                     {busy === card.id ? 'Issuing…' : 'Get this card'}
                   </button>
                 </div>
@@ -279,19 +277,20 @@ export default function ProductsPage() {
         </div>
         <div className="product-grid three">
           {ACCOUNT_TYPES.map((acc) => (
-            <div className="product-card" key={acc.id}>
-              <div className="product-card-body" style={{ padding: '20px 18px' }}>
-                <div className="acc-icon">{acc.icon}</div>
-                <div className="product-card-name" style={{ marginTop: 10 }}>{acc.title}</div>
+            <div className="offer-tile" key={acc.id}>
+              <div className="offer-tile-art">
+                <div style={{ width: '100%' }}>
+                  <AccountCard accountNumber="•••• ••••" currency={acc.currency} label={acc.title} mini />
+                </div>
+              </div>
+              <div className="offer-tile-body">
+                <div className="product-card-name">{acc.title}</div>
                 <div className="product-card-sub">{acc.subtitle}</div>
-                <ul className="product-perks">
+                <ul className="product-perks" style={{ flex: 1 }}>
                   {acc.perks.map((p) => <li key={p}>{p}</li>)}
                 </ul>
                 <div className="actions" style={{ marginTop: 14 }}>
-                  <button
-                    className="primary"
-                    onClick={() => navigate('/accounts/open', { state: { currency: acc.currency, label: acc.title } })}
-                  >
+                  <button className="primary" onClick={() => navigate('/accounts/open', { state: { currency: acc.currency, label: acc.title } })}>
                     Open account
                   </button>
                 </div>

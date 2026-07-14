@@ -344,6 +344,38 @@ services:
       - notification-service
     networks: [banking-net]
 
+  db-seed:
+    image: postgres:16-alpine
+    environment:
+      PGHOST: postgres
+      PGUSER: banking
+      PGPASSWORD: banking
+    volumes:
+      - ./infra/seed/seed.sql:/seed/seed.sql:ro
+      - ./infra/seed/run-seed.sh:/run-seed.sh:ro
+    command: ["/bin/sh", "/run-seed.sh"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      account-service:
+        condition: service_started
+      customer-service:
+        condition: service_started
+      transaction-service:
+        condition: service_started
+      payment-service:
+        condition: service_started
+      card-service:
+        condition: service_started
+      loan-service:
+        condition: service_started
+      notification-service:
+        condition: service_started
+      audit-service:
+        condition: service_started
+    restart: "no"
+    networks: [banking-net]
+
   banking-ui:
     build:
       context: ./banking-ui

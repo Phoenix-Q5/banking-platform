@@ -29,6 +29,9 @@ public class SecurityConfig {
                     "/services/*/v3/api-docs",
                     "/services/*/v3/api-docs/**"
                 ).permitAll()
+                // public — self-registration and card product catalogue
+                .pathMatchers(HttpMethod.POST, "/api/customers").permitAll()
+                .pathMatchers(HttpMethod.GET,  "/api/cards/offers").permitAll()
                 .anyExchange().authenticated()
             )
             .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> {}));

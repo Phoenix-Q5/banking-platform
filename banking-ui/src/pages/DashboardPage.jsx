@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../api'
 import { useAuth } from '../auth'
+import AccountCard from '../components/AccountCard'
 
 function money(amount, currency = 'USD') {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(Number(amount || 0))
@@ -98,28 +99,42 @@ export default function DashboardPage() {
       <p className="page-sub">Accounts, recent activity, and quick transfers for your Harbor Bank profile.</p>
       {error && <div className="error" style={{ marginBottom: 12 }}>{error}</div>}
 
-      <div className="grid two">
-        <section className="panel">
-          <h2>Balances</h2>
-          <div className="stat">
-            <div className="label">Total available</div>
-            <div className="value">{money(total)}</div>
+      {/* Account cards */}
+      <section style={{ marginBottom: 20 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+          <div>
+            <h2 style={{ fontFamily: 'Fraunces, Georgia, serif', fontSize: '1.2rem', margin: 0, color: 'var(--navy)' }}>
+              Your accounts
+            </h2>
+            <p style={{ color: 'var(--muted)', fontSize: '0.85rem', margin: '2px 0 0' }}>
+              Total: <strong>{money(total)}</strong>
+            </p>
           </div>
-          {accounts.length === 0 && <div className="empty">No accounts yet.</div>}
-          {accounts.map((a) => (
-            <div className="stat" key={a.id}>
-              <div className="label">
-                <Link to={`/accounts/${a.id}`} className="account-link">{a.accountNumber}</Link>
-                {' · '}<span className={`badge ${a.status}`}>{a.status}</span>
-              </div>
-              <div className="value">{money(a.balance, a.currency)}</div>
-            </div>
-          ))}
-          <div className="actions">
-            <button className="primary" disabled={busy} onClick={openAccount}>Open account</button>
+          <button className="primary" disabled={busy} onClick={openAccount} style={{ whiteSpace: 'nowrap' }}>
+            + Open account
+          </button>
+        </div>
+        {accounts.length === 0 ? (
+          <div className="panel empty" style={{ textAlign: 'center', padding: '28px' }}>
+            No accounts yet — open your first account to get started.
           </div>
-        </section>
+        ) : (
+          <div className="accounts-gallery">
+            {accounts.map((a) => (
+              <Link to={`/accounts/${a.id}`} key={a.id} style={{ textDecoration: 'none' }}>
+                <AccountCard
+                  accountNumber={a.accountNumber}
+                  currency={a.currency}
+                  balance={a.balance}
+                  status={a.status}
+                />
+              </Link>
+            ))}
+          </div>
+        )}
+      </section>
 
+      <div className="grid two">
         <section className="panel">
           <h2>Quick transfer</h2>
           <form className="form" onSubmit={sendTransfer}>

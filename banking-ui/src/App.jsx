@@ -1,6 +1,8 @@
 import { Navigate, NavLink, Route, Routes } from 'react-router-dom'
 import { useAuth } from './auth'
 import LoginPage from './pages/LoginPage'
+import RegisterPage from './pages/RegisterPage'
+import CardOffersPage from './pages/CardOffersPage'
 import DashboardPage from './pages/DashboardPage'
 import PaymentsPage from './pages/PaymentsPage'
 import CardsPage from './pages/CardsPage'
@@ -61,7 +63,10 @@ export default function App() {
 
   return (
     <Routes>
+      {/* Public routes — no authentication required */}
       <Route path="/login" element={isAuthenticated ? <Navigate to="/" replace /> : <LoginPage />} />
+      <Route path="/register" element={isAuthenticated ? <Navigate to="/" replace /> : <RegisterPage />} />
+      <Route path="/card-offers" element={<CardOffersPage />} />
       <Route
         path="/"
         element={
