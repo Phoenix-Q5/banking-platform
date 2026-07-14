@@ -1,6 +1,7 @@
 package com.bankingplatform.opsagent.webhook;
 
 import com.bankingplatform.opsagent.config.OpsAgentProperties;
+import com.bankingplatform.opsagent.metrics.OpsAgentMetrics;
 import com.bankingplatform.opsagent.model.Incident;
 import com.bankingplatform.opsagent.service.IncidentStore;
 import com.bankingplatform.opsagent.service.InvestigationService;
@@ -20,13 +21,16 @@ public class AlertmanagerWebhookService {
     private final IncidentStore incidentStore;
     private final InvestigationService investigationService;
     private final OpsAgentProperties properties;
+    private final OpsAgentMetrics opsAgentMetrics;
 
     public AlertmanagerWebhookService(IncidentStore incidentStore,
                                       InvestigationService investigationService,
-                                      OpsAgentProperties properties) {
+                                      OpsAgentProperties properties,
+                                      OpsAgentMetrics opsAgentMetrics) {
         this.incidentStore = incidentStore;
         this.investigationService = investigationService;
         this.properties = properties;
+        this.opsAgentMetrics = opsAgentMetrics;
     }
 
     public Incident handle(JsonNode payload) {
@@ -34,6 +38,14 @@ public class AlertmanagerWebhookService {
         JsonNode alerts = payload.path("alerts");
         if (!alerts.isArray() || alerts.isEmpty()) {
             throw new IllegalArgumentException("Alertmanager payload missing alerts[]");
+        }
+
+        // Record every alert in the payload for metrics.
+        for (JsonNode alert : alerts) {
+            opsAgentMetrics.recordAlertReceived(
+                    alert.path("labels").path("alertname").asText("unknown"),
+                    alert.path("labels").path("severity").asText("unknown"),
+                    alert.path("status").asText(status));
         }
 
         // Process the first firing alert as the primary signal; attach all fingerprints.
@@ -94,6 +106,10 @@ public class AlertmanagerWebhookService {
             }
         }
         incident.getEvidence().put("alertmanagerPayload", payload);
+
+        opsAgentMetrics.recordIncidentCreated(incident.getSource(),
+                incident.getSeverity() != null ? incident.getSeverity().name() : null,
+                incident.getCategory());
 
         if (properties.isAutoInvestigate()) {
             return investigationService.createAndInvestigateAsync(incident);

@@ -1619,278 +1619,555 @@
     },
     {
       "name": "Ops Agent",
-      "description": "Ops agent runs on port 8085 (not routed through API gateway).",
+      "description": "AI SRE agent running on port 8085 (direct, not routed through API gateway). All endpoints are unauthenticated.\n\n**Recommended workflow:**\n1. *Health Summary* — confirm agent is up and check open incidents\n2. *Simulate Alert* — pick one of the 5 alert scenarios to fire an incident\n3. *List Incidents* — `incidentId` is auto-saved from the first result\n4. *Get Incident* — view full investigation details\n5. *Get Incident Report* — read the markdown report + proposed mitigations (`actionId` is auto-saved)\n6. *Approve Mitigation* — approve a proposed step; agent executes safe automated probes\n7. *Chat* — ask a free-form question about any service",
       "item": [
         {
           "name": "Health Summary",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200) {",
+                  "  const json = pm.response.json();",
+                  "  pm.test('Engine reported', () => pm.expect(json.engine).to.be.a('string'));",
+                  "  console.log('Open incidents:', json.openIncidents, '| Engine:', json.engine, '| LLM:', json.llmEnabled);",
+                  "}"
+                ]
               }
-            ],
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [{ "key": "Content-Type", "value": "application/json", "type": "text" }],
             "url": {
               "raw": "{{opsAgentUrl}}/api/agent/health-summary",
-              "host": [
-                "{{opsAgentUrl}}"
-              ],
-              "path": [
-                "api",
-                "agent",
-                "health-summary"
-              ]
+              "host": ["{{opsAgentUrl}}"],
+              "path": ["api", "agent", "health-summary"]
             },
-            "description": "",
-            "auth": {
-              "type": "noauth"
-            }
+            "description": "Returns agent engine status, mitigation mode, registered tool catalog, and count of open incidents."
           }
         },
         {
           "name": "List Tools",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Tools array returned', () => pm.expect(pm.response.json()).to.be.an('array'));"
+                ]
               }
-            ],
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [{ "key": "Content-Type", "value": "application/json", "type": "text" }],
             "url": {
               "raw": "{{opsAgentUrl}}/api/agent/tools",
-              "host": [
-                "{{opsAgentUrl}}"
-              ],
-              "path": [
-                "api",
-                "agent",
-                "tools"
-              ]
+              "host": ["{{opsAgentUrl}}"],
+              "path": ["api", "agent", "tools"]
             },
-            "description": "",
-            "auth": {
-              "type": "noauth"
-            }
+            "description": "Returns the JSON-schema catalog for all registered agent tools: service_health, prometheus_query, loki_query, tempo_search, circuit_breaker_state."
           }
         },
         {
-          "name": "Investigate",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
+          "name": "Investigate (manual trigger)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 202 Accepted', () => pm.response.to.have.status(202));",
+                  "if (pm.response.code === 202) {",
+                  "  const json = pm.response.json();",
+                  "  pm.collectionVariables.set('incidentId', json.id);",
+                  "  pm.test('incidentId saved', () => pm.expect(json.id).to.be.a('string'));",
+                  "  console.log('Incident created:', json.id, '| Status:', json.status, '| Severity:', json.severity);",
+                  "}"
+                ]
               }
-            ],
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json", "type": "text" }],
             "url": {
               "raw": "{{opsAgentUrl}}/api/agent/investigate",
-              "host": [
-                "{{opsAgentUrl}}"
-              ],
-              "path": [
-                "api",
-                "agent",
-                "investigate"
-              ]
+              "host": ["{{opsAgentUrl}}"],
+              "path": ["api", "agent", "investigate"]
             },
-            "description": "",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"title\": \"High error rate on account-service\",\n  \"description\": \"5xx spike in last 10 minutes\",\n  \"service\": \"account-service\",\n  \"category\": \"latency\",\n  \"severity\": \"WARNING\"\n}"
+              "raw": "{\n  \"title\": \"High error rate on account-service\",\n  \"description\": \"5xx spike observed in the last 10 minutes. Transfers are failing intermittently.\",\n  \"service\": \"account-service\",\n  \"category\": \"errors\",\n  \"severity\": \"WARNING\",\n  \"context\": {\n    \"triggeredBy\": \"postman-test\",\n    \"endpoint\": \"/api/accounts/{id}/debit\"\n  }\n}"
             },
-            "auth": {
-              "type": "noauth"
-            }
+            "description": "Starts an async investigation. Returns 202 with the new Incident object. The `incidentId` collection variable is auto-saved from the response.\n\n**Severity values:** INFO | WARNING | CRITICAL\n**Categories:** errors, latency, availability, resiliency, chat, manual"
           }
         },
         {
           "name": "List Incidents",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200) {",
+                  "  const incidents = pm.response.json();",
+                  "  pm.test('Array returned', () => pm.expect(incidents).to.be.an('array'));",
+                  "  if (incidents.length > 0) {",
+                  "    pm.collectionVariables.set('incidentId', incidents[0].id);",
+                  "    console.log('Latest incident:', incidents[0].id, '| Status:', incidents[0].status, '| Severity:', incidents[0].severity, '| Source:', incidents[0].source);",
+                  "    console.log('Total incidents:', incidents.length);",
+                  "  }",
+                  "}"
+                ]
               }
-            ],
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [{ "key": "Content-Type", "value": "application/json", "type": "text" }],
             "url": {
               "raw": "{{opsAgentUrl}}/api/agent/incidents",
-              "host": [
-                "{{opsAgentUrl}}"
-              ],
-              "path": [
-                "api",
-                "agent",
-                "incidents"
-              ]
+              "host": ["{{opsAgentUrl}}"],
+              "path": ["api", "agent", "incidents"]
             },
-            "description": "",
-            "auth": {
-              "type": "noauth"
-            }
+            "description": "Returns all incidents sorted by `updatedAt` descending. The `incidentId` variable is auto-saved to the most-recent incident.\n\n**Incident statuses:** OPEN → INVESTIGATING → MITIGATING → RESOLVED | CLOSED\n**Sources:** alertmanager | manual | chat"
           }
         },
         {
           "name": "Get Incident",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200) {",
+                  "  const inc = pm.response.json();",
+                  "  console.log('Incident:', inc.id);",
+                  "  console.log('Status:', inc.status, '| Severity:', inc.severity, '| Service:', inc.affectedService);",
+                  "  console.log('Root cause:', inc.rootCauseHypothesis);",
+                  "  console.log('Mitigations proposed:', inc.mitigations ? inc.mitigations.length : 0);",
+                  "  if (inc.mitigations && inc.mitigations.length > 0) {",
+                  "    const proposed = inc.mitigations.find(m => m.status === 'PROPOSED');",
+                  "    if (proposed) {",
+                  "      pm.collectionVariables.set('actionId', proposed.id);",
+                  "      console.log('First PROPOSED actionId saved:', proposed.id, '| Playbook:', proposed.playbook);",
+                  "    }",
+                  "  }",
+                  "}"
+                ]
               }
-            ],
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [{ "key": "Content-Type", "value": "application/json", "type": "text" }],
             "url": {
               "raw": "{{opsAgentUrl}}/api/agent/incidents/{{incidentId}}",
-              "host": [
-                "{{opsAgentUrl}}"
-              ],
-              "path": [
-                "api",
-                "agent",
-                "incidents",
-                "{{incidentId}}"
-              ]
+              "host": ["{{opsAgentUrl}}"],
+              "path": ["api", "agent", "incidents", "{{incidentId}}"]
             },
-            "description": "",
-            "auth": {
-              "type": "noauth"
-            }
+            "description": "Returns the full incident including investigation steps, evidence map, root-cause hypothesis, and all proposed mitigation actions. The first PROPOSED `actionId` is auto-saved."
           }
         },
         {
           "name": "Get Incident Report",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200) {",
+                  "  const report = pm.response.json();",
+                  "  console.log('=== INCIDENT REPORT ===');",
+                  "  console.log('Title:', report.title);",
+                  "  console.log('Status:', report.status, '| Severity:', report.severity);",
+                  "  console.log('Affected Service:', report.affectedService);",
+                  "  console.log('Root Cause:', report.rootCauseHypothesis);",
+                  "  if (report.findings) report.findings.forEach((f, i) => console.log('Finding', i+1+':', f));",
+                  "  if (report.recommendedActions) report.recommendedActions.forEach((a, i) => console.log('Action', i+1+':', a));",
+                  "}"
+                ]
               }
-            ],
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [{ "key": "Content-Type", "value": "application/json", "type": "text" }],
             "url": {
               "raw": "{{opsAgentUrl}}/api/agent/incidents/{{incidentId}}/report",
-              "host": [
-                "{{opsAgentUrl}}"
-              ],
-              "path": [
-                "api",
-                "agent",
-                "incidents",
-                "{{incidentId}}",
-                "report"
-              ]
+              "host": ["{{opsAgentUrl}}"],
+              "path": ["api", "agent", "incidents", "{{incidentId}}", "report"]
             },
-            "description": "",
-            "auth": {
-              "type": "noauth"
-            }
+            "description": "Returns the structured `AgentReport` with executive summary, root-cause hypothesis, findings list, recommended actions, resiliency notes, and full markdown report."
           }
         },
         {
-          "name": "Approve Mitigation",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
+          "name": "Approve Mitigation Action",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200) {",
+                  "  const action = pm.response.json();",
+                  "  pm.test('Action status updated', () => pm.expect(['APPROVED','EXECUTED','FAILED']).to.include(action.status));",
+                  "  console.log('Mitigation:', action.description);",
+                  "  console.log('Status after approval:', action.status);",
+                  "  console.log('Playbook:', action.playbook, '| Automated:', action.automated);",
+                  "  if (action.result) console.log('Execution result:', action.result);",
+                  "  if (action.executedAt) console.log('Executed at:', action.executedAt);",
+                  "}"
+                ]
               }
-            ],
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json", "type": "text" }],
             "url": {
               "raw": "{{opsAgentUrl}}/api/agent/incidents/{{incidentId}}/mitigations/{{actionId}}/approve",
-              "host": [
-                "{{opsAgentUrl}}"
-              ],
-              "path": [
-                "api",
-                "agent",
-                "incidents",
-                "{{incidentId}}",
-                "mitigations",
-                "{{actionId}}",
-                "approve"
-              ]
+              "host": ["{{opsAgentUrl}}"],
+              "path": ["api", "agent", "incidents", "{{incidentId}}", "mitigations", "{{actionId}}", "approve"]
             },
-            "description": "",
-            "auth": {
-              "type": "noauth"
-            }
+            "description": "Approves and executes a mitigation action. If `automated=true`, the agent runs a safe probe (health check, Loki query, Tempo search, or Prometheus query). If `automated=false`, the step is acknowledged as manually executed.\n\n**MitigationAction.Status flow:** PROPOSED → APPROVED → EXECUTED | FAILED\n\nSet `{{incidentId}}` and `{{actionId}}` — both are auto-saved by *Get Incident* or *List Incidents*."
           }
         },
         {
-          "name": "Alertmanager Webhook",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
+          "name": "Chat — Free-form Investigation",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200) {",
+                  "  const r = pm.response.json();",
+                  "  pm.collectionVariables.set('incidentId', r.incidentId);",
+                  "  pm.test('Reply returned', () => pm.expect(r.reply).to.be.a('string'));",
+                  "  console.log('Incident created/updated:', r.incidentId);",
+                  "  console.log('Status:', r.status);",
+                  "  console.log('Reply (truncated):', r.reply ? r.reply.substring(0, 300) : '(empty)');",
+                  "  if (r.mitigations) console.log('Mitigations proposed:', r.mitigations.length);",
+                  "}"
+                ]
               }
-            ],
-            "url": {
-              "raw": "{{opsAgentUrl}}/api/agent/webhooks/alertmanager",
-              "host": [
-                "{{opsAgentUrl}}"
-              ],
-              "path": [
-                "api",
-                "agent",
-                "webhooks",
-                "alertmanager"
-              ]
-            },
-            "description": "",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"version\": \"4\",\n  \"status\": \"firing\",\n  \"alerts\": [\n    {\n      \"status\": \"firing\",\n      \"labels\": {\n        \"alertname\": \"HighErrorRate\",\n        \"service\": \"account-service\"\n      },\n      \"annotations\": {\n        \"summary\": \"Error rate above threshold\"\n      }\n    }\n  ]\n}"
-            },
-            "auth": {
-              "type": "noauth"
             }
-          }
-        },
-        {
-          "name": "Chat",
+          ],
           "request": {
+            "auth": { "type": "noauth" },
             "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
+            "header": [{ "key": "Content-Type", "value": "application/json", "type": "text" }],
             "url": {
               "raw": "{{opsAgentUrl}}/api/agent/chat",
-              "host": [
-                "{{opsAgentUrl}}"
-              ],
-              "path": [
-                "api",
-                "agent",
-                "chat"
-              ]
+              "host": ["{{opsAgentUrl}}"],
+              "path": ["api", "agent", "chat"]
             },
-            "description": "",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"message\": \"Why is account-service returning 503?\",\n  \"incidentId\": \"{{incidentId}}\"\n}"
+              "raw": "{\n  \"message\": \"Why is transaction-service returning errors and what should I do?\"\n}"
             },
-            "auth": {
-              "type": "noauth"
+            "description": "Synchronous investigation from a natural-language prompt. Runs the full investigation pipeline and returns an immediate reply with root-cause hypothesis and mitigations.\n\nOptionally pass `incidentId` to update an existing incident instead of creating a new one.\n\n**Example messages:**\n- `\"Why is account-service slow?\"`\n- `\"Is the circuit breaker open on transaction-service?\"`\n- `\"What is the current platform health?\"`"
+          }
+        },
+        {
+          "name": "Chat — Follow-up on Existing Incident",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200) {",
+                  "  const r = pm.response.json();",
+                  "  console.log('Updated incident:', r.incidentId, '| Status:', r.status);",
+                  "}"
+                ]
+              }
             }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json", "type": "text" }],
+            "url": {
+              "raw": "{{opsAgentUrl}}/api/agent/chat",
+              "host": ["{{opsAgentUrl}}"],
+              "path": ["api", "agent", "chat"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"Check the Loki logs for the last 30 minutes and tell me what errors you see.\",\n  \"incidentId\": \"{{incidentId}}\"\n}"
+            },
+            "description": "Follow-up chat tied to `{{incidentId}}`. Updates the incident summary with your message and re-runs investigation."
+          }
+        },
+        {
+          "name": "Simulate Alert — ServiceDown",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 202 Accepted', () => pm.response.to.have.status(202));",
+                  "if (pm.response.code === 202) {",
+                  "  const r = pm.response.json();",
+                  "  pm.collectionVariables.set('incidentId', r.incidentId);",
+                  "  pm.test('incidentId saved', () => pm.expect(r.incidentId).to.be.a('string'));",
+                  "  console.log('Alert accepted → incidentId:', r.incidentId, '| Status:', r.status);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json", "type": "text" }],
+            "url": {
+              "raw": "{{opsAgentUrl}}/api/agent/webhooks/alertmanager",
+              "host": ["{{opsAgentUrl}}"],
+              "path": ["api", "agent", "webhooks", "alertmanager"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"version\": \"4\",\n  \"status\": \"firing\",\n  \"alerts\": [\n    {\n      \"status\": \"firing\",\n      \"fingerprint\": \"sim-service-down-1\",\n      \"labels\": {\n        \"alertname\": \"ServiceDown\",\n        \"severity\": \"critical\",\n        \"category\": \"availability\",\n        \"application\": \"account-service\",\n        \"job\": \"account-service\"\n      },\n      \"annotations\": {\n        \"summary\": \"account-service is down\",\n        \"description\": \"Prometheus target account-service:8081 has been unreachable for more than 30s.\"\n      }\n    }\n  ]\n}"
+            },
+            "description": "Simulates the **ServiceDown** Prometheus alert firing for `account-service`. The `incidentId` is auto-saved. Use *Get Incident* to see the investigation result."
+          }
+        },
+        {
+          "name": "Simulate Alert — HighErrorRate",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 202 Accepted', () => pm.response.to.have.status(202));",
+                  "if (pm.response.code === 202) {",
+                  "  const r = pm.response.json();",
+                  "  pm.collectionVariables.set('incidentId', r.incidentId);",
+                  "  console.log('Alert accepted → incidentId:', r.incidentId, '| Status:', r.status);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json", "type": "text" }],
+            "url": {
+              "raw": "{{opsAgentUrl}}/api/agent/webhooks/alertmanager",
+              "host": ["{{opsAgentUrl}}"],
+              "path": ["api", "agent", "webhooks", "alertmanager"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"version\": \"4\",\n  \"status\": \"firing\",\n  \"alerts\": [\n    {\n      \"status\": \"firing\",\n      \"fingerprint\": \"sim-high-error-rate-1\",\n      \"labels\": {\n        \"alertname\": \"HighErrorRate\",\n        \"severity\": \"warning\",\n        \"category\": \"errors\",\n        \"application\": \"transaction-service\",\n        \"job\": \"transaction-service\"\n      },\n      \"annotations\": {\n        \"summary\": \"Elevated 5xx rate on transaction-service\",\n        \"description\": \"More than 5% of requests are failing with 5xx on transaction-service over the last 2 minutes.\"\n      }\n    }\n  ]\n}"
+            },
+            "description": "Simulates the **HighErrorRate** Prometheus alert for `transaction-service`. 5xx rate exceeded 5% threshold."
+          }
+        },
+        {
+          "name": "Simulate Alert — HighLatencyP95",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 202 Accepted', () => pm.response.to.have.status(202));",
+                  "if (pm.response.code === 202) {",
+                  "  const r = pm.response.json();",
+                  "  pm.collectionVariables.set('incidentId', r.incidentId);",
+                  "  console.log('Alert accepted → incidentId:', r.incidentId, '| Status:', r.status);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json", "type": "text" }],
+            "url": {
+              "raw": "{{opsAgentUrl}}/api/agent/webhooks/alertmanager",
+              "host": ["{{opsAgentUrl}}"],
+              "path": ["api", "agent", "webhooks", "alertmanager"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"version\": \"4\",\n  \"status\": \"firing\",\n  \"alerts\": [\n    {\n      \"status\": \"firing\",\n      \"fingerprint\": \"sim-high-latency-1\",\n      \"labels\": {\n        \"alertname\": \"HighLatencyP95\",\n        \"severity\": \"warning\",\n        \"category\": \"latency\",\n        \"application\": \"payment-service\",\n        \"job\": \"payment-service\"\n      },\n      \"annotations\": {\n        \"summary\": \"High p95 latency on payment-service\",\n        \"description\": \"p95 request latency exceeds 2s on payment-service over the last 5 minutes. Inspect slow spans in Tempo.\"\n      }\n    }\n  ]\n}"
+            },
+            "description": "Simulates the **HighLatencyP95** Prometheus alert for `payment-service`. P95 exceeded 2s threshold."
+          }
+        },
+        {
+          "name": "Simulate Alert — CircuitBreakerOpen",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 202 Accepted', () => pm.response.to.have.status(202));",
+                  "if (pm.response.code === 202) {",
+                  "  const r = pm.response.json();",
+                  "  pm.collectionVariables.set('incidentId', r.incidentId);",
+                  "  console.log('Alert accepted → incidentId:', r.incidentId, '| Status:', r.status);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json", "type": "text" }],
+            "url": {
+              "raw": "{{opsAgentUrl}}/api/agent/webhooks/alertmanager",
+              "host": ["{{opsAgentUrl}}"],
+              "path": ["api", "agent", "webhooks", "alertmanager"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"version\": \"4\",\n  \"status\": \"firing\",\n  \"alerts\": [\n    {\n      \"status\": \"firing\",\n      \"fingerprint\": \"sim-cb-open-1\",\n      \"labels\": {\n        \"alertname\": \"CircuitBreakerOpen\",\n        \"severity\": \"critical\",\n        \"category\": \"resiliency\",\n        \"application\": \"transaction-service\",\n        \"job\": \"transaction-service\"\n      },\n      \"annotations\": {\n        \"summary\": \"Circuit breaker open on transaction-service\",\n        \"description\": \"Circuit breaker account-service-cb is OPEN — downstream calls are failing fast. Check health and mitigation playbooks.\"\n      }\n    }\n  ]\n}"
+            },
+            "description": "Simulates the **CircuitBreakerOpen** Prometheus alert — CRITICAL severity. Activates the `circuit-breaker-open` playbook with automated health + Loki probes."
+          }
+        },
+        {
+          "name": "Simulate Alert — DatabaseUnhealthy",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 202 Accepted', () => pm.response.to.have.status(202));",
+                  "if (pm.response.code === 202) {",
+                  "  const r = pm.response.json();",
+                  "  pm.collectionVariables.set('incidentId', r.incidentId);",
+                  "  console.log('Alert accepted → incidentId:', r.incidentId, '| Status:', r.status);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json", "type": "text" }],
+            "url": {
+              "raw": "{{opsAgentUrl}}/api/agent/webhooks/alertmanager",
+              "host": ["{{opsAgentUrl}}"],
+              "path": ["api", "agent", "webhooks", "alertmanager"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"version\": \"4\",\n  \"status\": \"firing\",\n  \"alerts\": [\n    {\n      \"status\": \"firing\",\n      \"fingerprint\": \"sim-db-unhealthy-1\",\n      \"labels\": {\n        \"alertname\": \"DatabaseUnhealthy\",\n        \"severity\": \"critical\",\n        \"category\": \"database\",\n        \"application\": \"account-service\",\n        \"job\": \"account-service\"\n      },\n      \"annotations\": {\n        \"summary\": \"Health check DOWN on account-service\",\n        \"description\": \"Spring Boot health reports DOWN — likely DB or downstream dependency. Inspect /actuator/health and Postgres connectivity.\"\n      }\n    }\n  ]\n}"
+            },
+            "description": "Simulates the **DatabaseUnhealthy** Prometheus alert for `account-service`. Triggers `service-down` playbook with downstream health probes."
+          }
+        },
+        {
+          "name": "Simulate Alert — Resolved",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 202 Accepted', () => pm.response.to.have.status(202));",
+                  "if (pm.response.code === 202) {",
+                  "  const r = pm.response.json();",
+                  "  console.log('Alert resolved → incidentId:', r.incidentId, '| Status:', r.status);",
+                  "  pm.test('Status is RESOLVED', () => pm.expect(r.status).to.equal('RESOLVED'));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json", "type": "text" }],
+            "url": {
+              "raw": "{{opsAgentUrl}}/api/agent/webhooks/alertmanager",
+              "host": ["{{opsAgentUrl}}"],
+              "path": ["api", "agent", "webhooks", "alertmanager"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"version\": \"4\",\n  \"status\": \"resolved\",\n  \"alerts\": [\n    {\n      \"status\": \"resolved\",\n      \"fingerprint\": \"sim-service-down-1\",\n      \"labels\": {\n        \"alertname\": \"ServiceDown\",\n        \"severity\": \"critical\",\n        \"application\": \"account-service\"\n      },\n      \"annotations\": {\n        \"summary\": \"account-service is back up\"\n      }\n    }\n  ]\n}"
+            },
+            "description": "Sends a **resolved** signal for the `sim-service-down-1` fingerprint. Marks the matching incident RESOLVED. Use the same `fingerprint` as the firing alert to dedup correctly."
+          }
+        },
+        {
+          "name": "Ops Agent — Actuator Health",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('UP', () => pm.expect(pm.response.json().status).to.equal('UP'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{opsAgentUrl}}/actuator/health",
+              "host": ["{{opsAgentUrl}}"],
+              "path": ["actuator", "health"]
+            },
+            "description": "Spring Boot actuator health check for ops-agent itself. Returns `{\"status\":\"UP\"}`."
+          }
+        },
+        {
+          "name": "Ops Agent — Prometheus Metrics",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{opsAgentUrl}}/actuator/prometheus",
+              "host": ["{{opsAgentUrl}}"],
+              "path": ["actuator", "prometheus"]
+            },
+            "description": "Raw Prometheus exposition format scraped by Prometheus every 10s. Includes custom ops-agent metrics:\n- `ops_agent_incidents` (gauge by status)\n- `ops_agent_incidents_open` (gauge)\n- `ops_agent_incidents_created_total` (counter by source/severity/category)\n- `ops_agent_alerts_received_total` (counter by alertname/severity/alert_status)\n- `ops_agent_mitigations_approved_total` (counter by playbook)\n- `ops_agent_mitigations_executed_total` (counter by playbook/success)"
           }
         }
       ]

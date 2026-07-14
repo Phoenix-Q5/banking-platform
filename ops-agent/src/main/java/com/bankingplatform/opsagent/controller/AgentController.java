@@ -2,6 +2,7 @@ package com.bankingplatform.opsagent.controller;
 
 import com.bankingplatform.opsagent.config.OpsAgentProperties;
 import com.bankingplatform.opsagent.llm.ReasoningEngineRouter;
+import com.bankingplatform.opsagent.metrics.OpsAgentMetrics;
 import com.bankingplatform.opsagent.mitigation.MitigationService;
 import com.bankingplatform.opsagent.model.AgentReport;
 import com.bankingplatform.opsagent.model.ChatRequest;
@@ -40,6 +41,7 @@ public class AgentController {
     private final ToolRegistry toolRegistry;
     private final OpsAgentProperties properties;
     private final ReasoningEngineRouter reasoningEngineRouter;
+    private final OpsAgentMetrics opsAgentMetrics;
 
     public AgentController(InvestigationService investigationService,
                            IncidentStore incidentStore,
@@ -47,7 +49,8 @@ public class AgentController {
                            MitigationService mitigationService,
                            ToolRegistry toolRegistry,
                            OpsAgentProperties properties,
-                           ReasoningEngineRouter reasoningEngineRouter) {
+                           ReasoningEngineRouter reasoningEngineRouter,
+                           OpsAgentMetrics opsAgentMetrics) {
         this.investigationService = investigationService;
         this.incidentStore = incidentStore;
         this.alertmanagerWebhookService = alertmanagerWebhookService;
@@ -55,6 +58,7 @@ public class AgentController {
         this.toolRegistry = toolRegistry;
         this.properties = properties;
         this.reasoningEngineRouter = reasoningEngineRouter;
+        this.opsAgentMetrics = opsAgentMetrics;
     }
 
     @GetMapping("/health-summary")
@@ -90,7 +94,11 @@ public class AgentController {
         if (request.getContext() != null) {
             incident.getEvidence().put("context", request.getContext());
         }
-        return investigationService.createAndInvestigateAsync(incident);
+        Incident created = investigationService.createAndInvestigateAsync(incident);
+        opsAgentMetrics.recordIncidentCreated(created.getSource(),
+                created.getSeverity() != null ? created.getSeverity().name() : null,
+                created.getCategory());
+        return created;
     }
 
     @GetMapping("/incidents")
@@ -120,6 +128,9 @@ public class AgentController {
         try {
             MitigationAction action = mitigationService.approveAndExecute(incident, actionId);
             incidentStore.save(incident);
+            opsAgentMetrics.recordMitigationApproved(action.getPlaybook());
+            opsAgentMetrics.recordMitigationExecuted(action.getPlaybook(),
+                    action.getStatus() == MitigationAction.Status.EXECUTED);
             return action;
         } catch (IllegalArgumentException ex) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, ex.getMessage());
@@ -153,6 +164,12 @@ public class AgentController {
             incident.setCategory("chat");
             incident.setSeverity(Incident.Severity.WARNING);
             incidentStore.save(incident);
+        }
+
+        if (request.getIncidentId() == null || request.getIncidentId().isBlank()) {
+            opsAgentMetrics.recordIncidentCreated(incident.getSource(),
+                    incident.getSeverity() != null ? incident.getSeverity().name() : null,
+                    incident.getCategory());
         }
 
         // Chat runs synchronously so the operator gets an immediate answer.
