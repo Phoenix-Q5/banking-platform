@@ -33,7 +33,7 @@ class AlertmanagerWebhookServiceTest {
         incidentStore = new IncidentStore();
         OpsAgentProperties properties = new OpsAgentProperties();
         properties.setAutoInvestigate(true);
-        service = new AlertmanagerWebhookService(incidentStore, investigationService, properties);
+        service = new AlertmanagerWebhookService(incidentStore, investigationService, properties, null);
     }
 
     @Test
