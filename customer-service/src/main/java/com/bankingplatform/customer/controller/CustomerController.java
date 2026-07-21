@@ -5,6 +5,7 @@ import com.bankingplatform.customer.exception.NotFoundException;
 import com.bankingplatform.customer.model.Customer;
 import com.bankingplatform.customer.repository.CustomerRepository;
 import com.bankingplatform.customer.service.CustomerRegistrationService;
+import com.bankingplatform.customer.service.SupportPinService;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,10 +23,13 @@ public class CustomerController {
     private static final Logger log = LoggerFactory.getLogger(CustomerController.class);
     private final CustomerRepository repository;
     private final CustomerRegistrationService registrationService;
+    private final SupportPinService supportPinService;
 
-    public CustomerController(CustomerRepository repository, CustomerRegistrationService registrationService) {
+    public CustomerController(CustomerRepository repository, CustomerRegistrationService registrationService,
+                              SupportPinService supportPinService) {
         this.repository = repository;
         this.registrationService = registrationService;
+        this.supportPinService = supportPinService;
     }
 
     @PostMapping("/register")
@@ -111,6 +115,20 @@ public class CustomerController {
         Customer saved = repository.save(customer);
         log.info("customer_kyc_updated customerId={} kycStatus={}", id, saved.getKycStatus());
         return CustomerResponse.from(saved);
+    }
+
+    /** Customer sets or rotates their secret 4-digit support PIN. */
+    @PostMapping("/{id}/support-pin")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void setSupportPin(@PathVariable("id") UUID id, @Valid @RequestBody SetSupportPinRequest request) {
+        supportPinService.setPin(id, request.pin());
+    }
+
+    /** Support staff verifies the PIN a customer supplied over the phone. */
+    @PostMapping("/{id}/support-pin/verify")
+    public SupportPinVerifyResponse verifySupportPin(@PathVariable("id") UUID id,
+                                                     @Valid @RequestBody VerifySupportPinRequest request) {
+        return supportPinService.verify(id, request.pin());
     }
 
     @PostMapping("/{id}/suspend")

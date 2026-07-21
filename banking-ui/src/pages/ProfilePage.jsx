@@ -13,6 +13,8 @@ export default function ProfilePage() {
   const [error, setError] = useState('')
   const [ok, setOk] = useState('')
   const [busy, setBusy] = useState(false)
+  const [pin, setPin] = useState('')
+  const [pinConfirm, setPinConfirm] = useState('')
 
   const load = async () => {
     if (!customerId) {
@@ -47,6 +49,32 @@ export default function ProfilePage() {
       const updated = await api.updateCustomer(token, customerId, form)
       setCustomer(updated)
       setOk('Profile updated')
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const savePin = async (e) => {
+    e.preventDefault()
+    setError('')
+    setOk('')
+    if (!/^\d{4}$/.test(pin)) {
+      setError('Support PIN must be exactly 4 digits.')
+      return
+    }
+    if (pin !== pinConfirm) {
+      setError('PINs do not match.')
+      return
+    }
+    setBusy(true)
+    try {
+      await api.setSupportPin(token, customerId, pin)
+      setPin('')
+      setPinConfirm('')
+      setOk('Support PIN saved')
+      await load()
     } catch (err) {
       setError(err.message)
     } finally {
@@ -137,6 +165,45 @@ export default function ProfilePage() {
           </form>
         </section>
       </div>
+
+      <section className="panel" style={{ marginTop: 16 }}>
+        <h2>Support PIN</h2>
+        <p className="muted" style={{ marginTop: 0 }}>
+          Your secret 4-digit PIN verifies your identity when you call Harbor Bank support.
+          {customer?.supportPinSet ? ' A PIN is currently on file — saving a new one replaces it.' : ' You have no PIN on file yet.'}
+        </p>
+        <form className="form" onSubmit={savePin}>
+          <div className="grid two" style={{ gap: 12 }}>
+            <label>
+              New PIN
+              <input
+                type="password"
+                inputMode="numeric"
+                maxLength={4}
+                value={pin}
+                onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
+                placeholder="••••"
+              />
+            </label>
+            <label>
+              Confirm PIN
+              <input
+                type="password"
+                inputMode="numeric"
+                maxLength={4}
+                value={pinConfirm}
+                onChange={(e) => setPinConfirm(e.target.value.replace(/\D/g, ''))}
+                placeholder="••••"
+              />
+            </label>
+          </div>
+          <div className="actions">
+            <button className="primary" disabled={busy || !customerId || pin.length !== 4 || pinConfirm.length !== 4}>
+              {customer?.supportPinSet ? 'Replace PIN' : 'Set PIN'}
+            </button>
+          </div>
+        </form>
+      </section>
     </div>
   )
 }

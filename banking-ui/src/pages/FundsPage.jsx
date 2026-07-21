@@ -74,7 +74,7 @@ export default function FundsPage() {
     setError('')
     setOk('')
     try {
-      await api.transfer(token, {
+      const txn = await api.transfer(token, {
         fromAccountId: transfer.fromAccountId,
         toAccountId: transfer.toAccountId,
         amount: Number(transfer.amount),
@@ -87,7 +87,13 @@ export default function FundsPage() {
         customerId,
         details: `Transfer ${transfer.amount} ${transfer.currency}`,
       })
-      setOk('Transfer completed')
+      if (txn.status === 'PENDING_APPROVAL') {
+        setOk('Transfer submitted — large transfers require admin approval before funds move.')
+      } else if (txn.status === 'FAILED') {
+        setError(txn.failureReason || 'Transfer failed')
+      } else {
+        setOk('Transfer completed')
+      }
       await load()
     } catch (err) {
       setError(err.message)

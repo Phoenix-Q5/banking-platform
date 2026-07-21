@@ -55,6 +55,19 @@ public class Customer {
     @Column(nullable = false)
     private Status status = Status.ACTIVE;
 
+    /** BCrypt hash of the customer's secret 4-digit support PIN. Never exposed via API. */
+    @Column(name = "support_pin_hash", length = 100)
+    private String supportPinHash;
+
+    @Column(name = "support_pin_set_at")
+    private Instant supportPinSetAt;
+
+    @Column(name = "support_pin_failed_attempts", nullable = false)
+    private int supportPinFailedAttempts = 0;
+
+    @Column(name = "support_pin_locked_until")
+    private Instant supportPinLockedUntil;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
@@ -108,6 +121,14 @@ public class Customer {
     public void setKycStatus(KycStatus kycStatus) { this.kycStatus = kycStatus; }
     public Status getStatus() { return status; }
     public void setStatus(Status status) { this.status = status; }
+    public String getSupportPinHash() { return supportPinHash; }
+    public void setSupportPinHash(String supportPinHash) { this.supportPinHash = supportPinHash; }
+    public Instant getSupportPinSetAt() { return supportPinSetAt; }
+    public void setSupportPinSetAt(Instant supportPinSetAt) { this.supportPinSetAt = supportPinSetAt; }
+    public int getSupportPinFailedAttempts() { return supportPinFailedAttempts; }
+    public void setSupportPinFailedAttempts(int supportPinFailedAttempts) { this.supportPinFailedAttempts = supportPinFailedAttempts; }
+    public Instant getSupportPinLockedUntil() { return supportPinLockedUntil; }
+    public void setSupportPinLockedUntil(Instant supportPinLockedUntil) { this.supportPinLockedUntil = supportPinLockedUntil; }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }
 }

@@ -51,6 +51,6 @@ public class Transaction {
     private Instant updatedAt;
 
     public enum TransactionStatus {
-        PENDING, COMPLETED, FAILED, REVERSED
+        PENDING, PENDING_APPROVAL, COMPLETED, FAILED, REVERSED
     }
 }

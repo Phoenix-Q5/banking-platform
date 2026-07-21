@@ -3,6 +3,7 @@ package com.bankingplatform.customer.dto;
 import com.bankingplatform.customer.model.Customer;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 import java.time.Instant;
@@ -59,6 +60,22 @@ public final class CustomerDtos {
         @NotBlank String kycStatus
     ) {}
 
+    public record SetSupportPinRequest(
+        @NotBlank @Pattern(regexp = "\\d{4}", message = "PIN must be exactly 4 digits") String pin
+    ) {}
+
+    public record VerifySupportPinRequest(
+        @NotBlank @Pattern(regexp = "\\d{4}", message = "PIN must be exactly 4 digits") String pin
+    ) {}
+
+    /** Verification result. Never contains the PIN or its hash. */
+    public record SupportPinVerifyResponse(
+        boolean verified,
+        boolean locked,
+        Integer attemptsRemaining,
+        Instant lockedUntil
+    ) {}
+
     public record CustomerResponse(
         UUID id,
         String externalUserId,
@@ -75,6 +92,7 @@ public final class CustomerDtos {
         String country,
         String kycStatus,
         String status,
+        boolean supportPinSet,
         Instant createdAt,
         Instant updatedAt
     ) {
@@ -83,7 +101,9 @@ public final class CustomerDtos {
                 c.getId(), c.getExternalUserId(), c.getEmail(), c.getFirstName(), c.getLastName(),
                 c.getPhone(), c.getDateOfBirth(), c.getAddressLine1(), c.getAddressLine2(),
                 c.getCity(), c.getState(), c.getPostalCode(), c.getCountry(),
-                c.getKycStatus().name(), c.getStatus().name(), c.getCreatedAt(), c.getUpdatedAt()
+                c.getKycStatus().name(), c.getStatus().name(),
+                c.getSupportPinHash() != null,
+                c.getCreatedAt(), c.getUpdatedAt()
             );
         }
     }

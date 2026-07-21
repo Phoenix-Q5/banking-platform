@@ -16,6 +16,8 @@ public interface AccountRepository extends JpaRepository<Account, UUID> {
 
     List<Account> findByCustomerId(UUID customerId);
 
+    List<Account> findByStatusOrderByCreatedAtAsc(Account.AccountStatus status);
+
     @Lock(LockModeType.OPTIMISTIC)
     @Query("select a from Account a where a.id = :id")
     Optional<Account> findByIdForUpdate(UUID id);

@@ -74,14 +74,30 @@ docker-compose up -d --build
 | User | Password | Role |
 |---|---|---|
 | `demo.customer` | `password` | Retail banking |
-| `demo.admin` | `password` | Admin / KYC / loans |
+| `demo.admin` | `password` | Admin / KYC / loans / approvals / freezes |
 | `demo.support` | `password` | Contact center |
+
+### Support PIN
+
+Every seeded customer (including `demo.customer@example.com`) has the secret
+4-digit support PIN **`1234`** on file (stored bcrypt-hashed). The contact
+center (`demo.support`) must verify this PIN before balances, cards, loans,
+and transfers are shown. Five wrong attempts lock verification for 15 minutes.
+Customers manage their PIN under **Profile → Support PIN**.
+
+### Admin approvals
+
+New accounts open in `PENDING_APPROVAL` and transfers of **$10,000 or more**
+(configurable via `TRANSFER_APPROVAL_THRESHOLD`) are held until `demo.admin`
+approves or rejects them in the Admin console tabs. Admins can also place a
+temporary freeze on any customer account or card from the **Freeze** tab.
 
 ## Try a live transfer alert
 
 1. Sign in as `demo.customer` at http://localhost:3001
 2. Open an account (and a second one, or use another account id)
-3. Send a transfer from Overview
+3. Have `demo.admin` approve the new account(s) in Admin → Account approvals
+4. Send a transfer from Overview (under $10,000, or approve it as `demo.admin`)
 4. Open **Alerts** — you should see `Transfer completed` (IN_APP + PUSH) without the UI creating it manually
 
 ## Mobile app (iOS)

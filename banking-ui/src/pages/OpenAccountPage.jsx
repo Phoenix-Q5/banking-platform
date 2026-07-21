@@ -73,10 +73,15 @@ export default function OpenAccountPage() {
   }
 
   if (step === 4 && opened) {
+    const pending = opened.status === 'PENDING_APPROVAL'
     return (
       <div>
-        <h1 className="page-title">Account opened!</h1>
-        <p className="page-sub">Your new account is ready to use.</p>
+        <h1 className="page-title">{pending ? 'Application submitted!' : 'Account opened!'}</h1>
+        <p className="page-sub">
+          {pending
+            ? 'Your new account is awaiting approval from our team — you will be able to use it once it is approved.'
+            : 'Your new account is ready to use.'}
+        </p>
         <section className="panel" style={{ maxWidth: 520 }}>
           <div className="open-success-icon">✓</div>
           <div className="open-success-title">
@@ -84,7 +89,7 @@ export default function OpenAccountPage() {
           </div>
           <div className="open-success-number">{opened.accountNumber}</div>
           <div className="open-success-meta">
-            <span className="badge ACTIVE">ACTIVE</span>
+            <span className={`badge ${opened.status}`}>{opened.status}</span>
             <span style={{ marginLeft: 8, color: 'var(--muted)', fontSize: '0.9rem' }}>{selectedCurrency.flag} {currency}</span>
           </div>
           <div className="actions" style={{ marginTop: 24, justifyContent: 'center' }}>

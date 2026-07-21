@@ -1,14 +1,19 @@
 ﻿-- ================================================================
 -- Harbor Bank â€” Development Seed Data
 -- ----------------------------------------------------------------
--- 100 customers Â· 145 accounts Â· 110 cards Â· 110 loans
--- 200 transactions Â· 100 beneficiaries Â· 110 payments
+-- 100 customers Â· 150 accounts Â· 110 cards Â· 95 loans
+-- 246 transactions Â· 100 beneficiaries Â· 110 payments
 -- 290 notifications Â· 310 audit events
+--
+-- Every customer gets support PIN '1234' (bcrypt-hashed, never plaintext).
+-- Includes accounts in PENDING_APPROVAL and large transfers held in
+-- PENDING_APPROVAL for the admin approval tabs, plus loans attached to the
+-- login-able demo customers (demo.customer / alex.rivera).
 --
 -- Scenarios covered
 --   KYC      : VERIFIED (75) Â· PENDING (15) Â· REJECTED (10)
 --   Customer : ACTIVE (95) Â· SUSPENDED (5)
---   Account  : ACTIVE Â· CLOSED (secondary accs 41-50)
+--   Account  : ACTIVE Â· CLOSED (secondary accs 41-50) Â· PENDING_APPROVAL (76-80)
 --   Card     : ACTIVE Â· FROZEN (66-70) Â· CANCELLED (71-75)
 --   Loan     : ACTIVE Â· APPROVED Â· UNDER_REVIEW Â· APPLIED Â· REJECTED
 --   Payment  : COMPLETED Â· PENDING Â· FAILED Â· SCHEDULED
@@ -88,6 +93,28 @@ SELECT
 FROM generate_series(1, 100) n
 ON CONFLICT (email) DO NOTHING;
 
+-- Support PIN: every customer gets the demo secret PIN '1234', stored as a
+-- bcrypt hash (pgcrypto 'bf' == $2a$, compatible with Spring's BCryptPasswordEncoder).
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+UPDATE customers
+SET support_pin_hash = crypt('1234', gen_salt('bf', 10)),
+    support_pin_set_at = NOW()
+WHERE support_pin_hash IS NULL;
+
+-- Resolve the login-able demo customers (created by customer-service on startup
+-- with random UUIDs) so we can attach loans to them below. Falls back to seed
+-- customers 001/002 when the demo rows do not exist yet.
+SELECT COALESCE(
+  (SELECT id::text FROM customers WHERE email = 'demo.customer@example.com'),
+  'c0000000-0000-4000-8000-000000000001'
+) AS demo_customer_id \gset
+
+SELECT COALESCE(
+  (SELECT id::text FROM customers WHERE email = 'alex.rivera@example.com'),
+  'c0000000-0000-4000-8000-000000000002'
+) AS alex_customer_id \gset
+
 -- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 -- 2. ACCOUNT SERVICE
 -- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -144,6 +171,23 @@ SELECT
   NOW() - (n     || ' days')::interval,
   NOW() - (n     || ' hours')::interval
 FROM generate_series(1, 20) n
+ON CONFLICT DO NOTHING;
+
+-- Newly opened accounts awaiting admin approval — customers 76-80
+INSERT INTO accounts (
+  id, account_number, customer_id, balance, currency,
+  status, version, created_at, updated_at
+)
+SELECT
+  ('a3000000-0000-4000-8000-' || lpad(to_hex(n), 12, '0'))::uuid,
+  'ACC' || lpad(to_hex(3000 + n)::text, 16, '0'),
+  ('c0000000-0000-4000-8000-' || lpad(to_hex(n), 12, '0'))::uuid,
+  0.00,
+  'USD',
+  'PENDING_APPROVAL', 0,
+  NOW() - ((n - 75) * 5 || ' hours')::interval,
+  NOW() - ((n - 75) * 5 || ' hours')::interval
+FROM generate_series(76, 80) n
 ON CONFLICT DO NOTHING;
 
 -- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -320,6 +364,30 @@ SELECT
 FROM generate_series(5, 25) n
 ON CONFLICT DO NOTHING;
 
+-- Loans for the login-able demo customers so the demo user sees data
+INSERT INTO loans (
+  id, customer_id, product_code, principal, interest_rate, term_months,
+  monthly_payment, outstanding_balance, currency, status, purpose,
+  created_at, updated_at
+) VALUES
+  ('d3000000-0000-4000-8000-000000000001'::uuid, :'demo_customer_id'::uuid,
+   'PERSONAL_UNSECURED', 15000.00, 7.25, 36, 464.99, 9800.50, 'USD',
+   'ACTIVE', 'Home renovation',
+   NOW() - INTERVAL '200 days', NOW() - INTERVAL '3 days'),
+  ('d3000000-0000-4000-8000-000000000002'::uuid, :'demo_customer_id'::uuid,
+   'AUTO', 32000.00, 5.90, 60, 617.03, 32000.00, 'USD',
+   'APPROVED', 'New vehicle purchase',
+   NOW() - INTERVAL '12 days', NOW() - INTERVAL '1 day'),
+  ('d3000000-0000-4000-8000-000000000003'::uuid, :'demo_customer_id'::uuid,
+   'HOME_IMPROVEMENT', 48000.00, 8.10, 120, 585.11, 48000.00, 'USD',
+   'UNDER_REVIEW', 'Kitchen remodel',
+   NOW() - INTERVAL '4 days', NOW() - INTERVAL '6 hours'),
+  ('d3000000-0000-4000-8000-000000000004'::uuid, :'alex_customer_id'::uuid,
+   'PERSONAL_UNSECURED', 8000.00, 9.40, 24, 367.27, 8000.00, 'USD',
+   'APPLIED', 'Debt consolidation',
+   NOW() - INTERVAL '2 days', NOW() - INTERVAL '2 days')
+ON CONFLICT DO NOTHING;
+
 -- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 -- 5. TRANSACTION SERVICE
 -- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -365,6 +433,24 @@ SELECT
   NOW() - (n * 6   || ' hours')::interval,
   NOW() - (n * 5   || ' hours')::interval
 FROM generate_series(1, 40) n
+ON CONFLICT DO NOTHING;
+
+-- Large transfers held for admin approval (>= $10,000 threshold)
+INSERT INTO transactions (
+  id, from_account_id, to_account_id, amount, currency,
+  status, failure_reason, created_at, updated_at
+)
+SELECT
+  ('e2000000-0000-4000-8000-' || lpad(to_hex(n), 12, '0'))::uuid,
+  ('a2000000-0000-4000-8000-' || lpad(to_hex(n), 12, '0'))::uuid,
+  ('a0000000-0000-4000-8000-' || lpad(to_hex(n + 30), 12, '0'))::uuid,
+  ROUND((10000 + n * 3750)::numeric, 2),
+  'USD',
+  'PENDING_APPROVAL',
+  NULL,
+  NOW() - (n * 3 || ' hours')::interval,
+  NOW() - (n * 3 || ' hours')::interval
+FROM generate_series(1, 6) n
 ON CONFLICT DO NOTHING;
 
 -- â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -781,11 +867,11 @@ ON CONFLICT DO NOTHING;
 \echo ''
 \echo '================================================================'
 \echo ' Harbor Bank seed complete.'
-\echo '  customers     : 100'
-\echo '  accounts      : 145  (75 primary + 50 secondary + 20 savings)'
+\echo '  customers     : 100  (all with support PIN 1234, bcrypt-hashed)'
+\echo '  accounts      : 150  (75 primary + 50 secondary + 20 savings + 5 pending approval)'
 \echo '  cards         : 110  (75 VISA + 35 MASTERCARD)'
-\echo '  loans         :  91  (60 personal + 30 auto + 21 home improv.)'
-\echo '  transactions  : ~240 (200 primary + 40 cross-currency)'
+\echo '  loans         :  95  (60 personal + 30 auto + 21 home improv. + 4 demo-user)'
+\echo '  transactions  : ~246 (200 primary + 40 cross-currency + 6 pending approval)'
 \echo '  beneficiaries : 100  (60 external + 40 internal)'
 \echo '  payments      : 110  (70 batch-1 + 40 batch-2)'
 \echo '  notifications : ~290 (welcome+KYC+loan+tx+security+suspend)'

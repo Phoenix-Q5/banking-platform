@@ -93,6 +93,10 @@ export const api = {
     request(`/api/customers/${id}`, { method: 'PUT', token, body: payload }),
   suspendCustomer: (token, id) =>
     request(`/api/customers/${id}/suspend`, { method: 'POST', token }),
+  setSupportPin: (token, id, pin) =>
+    request(`/api/customers/${id}/support-pin`, { method: 'POST', token, body: { pin } }),
+  verifySupportPin: (token, id, pin) =>
+    request(`/api/customers/${id}/support-pin/verify`, { method: 'POST', token, body: { pin } }),
 
   // accounts
   listAccounts: (token, customerId) =>
@@ -102,12 +106,22 @@ export const api = {
   getAccount: (token, id) => request(`/api/accounts/${id}`, { token }),
   deposit: (token, id, payload) =>
     request(`/api/accounts/${id}/deposit`, { method: 'POST', token, body: payload }),
+  listAccountsByStatus: (token, status) =>
+    request(`/api/accounts?status=${status}`, { token }),
+  decideAccount: (token, id, action) =>
+    request(`/api/accounts/${id}/decision`, { method: 'POST', token, body: { action } }),
+  freezeAccount: (token, id) => request(`/api/accounts/${id}/freeze`, { method: 'POST', token }),
+  unfreezeAccount: (token, id) => request(`/api/accounts/${id}/unfreeze`, { method: 'POST', token }),
 
   // transactions
   listTransactions: (token, accountId) =>
     request(`/api/transactions?accountId=${accountId}`, { token }),
   transfer: (token, payload) =>
     request(`/api/transactions`, { method: 'POST', token, body: payload }),
+  listTransactionsByStatus: (token, status) =>
+    request(`/api/transactions?status=${status}`, { token }),
+  decideTransaction: (token, id, action) =>
+    request(`/api/transactions/${id}/decision`, { method: 'POST', token, body: { action } }),
 
   // payments
   listPayments: (token, customerId) =>

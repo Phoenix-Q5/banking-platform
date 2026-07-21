@@ -55,6 +55,6 @@ public class Account {
     private Instant updatedAt;
 
     public enum AccountStatus {
-        ACTIVE, FROZEN, CLOSED
+        PENDING_APPROVAL, ACTIVE, FROZEN, CLOSED
     }
 }
