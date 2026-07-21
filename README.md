@@ -36,6 +36,24 @@ Automatic transaction alerts fire when transfers complete or fail. Push delivery
 dispatches to registered device tokens (FCM/APNs/Web Push vendor hook is stubbed
 with structured logs so the pipeline is end-to-end without vendor credentials).
 
+## Customer accounts (username / password)
+
+Self-registration at **http://localhost:3001/register** creates:
+
+1. A **Keycloak** user (username + password, `CUSTOMER` role)
+2. A **customer-service** profile linked via `externalUserId`
+
+| Action | How |
+|---|---|
+| Create username/password | Register wizard → Credentials step |
+| Sign in | Login page (or auto-login after register) |
+| Forgot password | Login → “Forgot password?” → Keycloak email reset |
+| Change password | Profile → “Change password (Keycloak)” |
+
+Forgot-password emails require SMTP. Copy [`.env.example`](.env) to `.env` and set `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM`, then recreate (`docker-compose up -d`).
+
+Customer UI: Overview, Funds (deposit/transfer), Products, Open Account, Payments, Cards, Loans, Alerts, Profile — plus account statements with CSV export.
+
 ## Run Harbor Bank
 
 ```bash

@@ -24,6 +24,9 @@ class AlertmanagerWebhookServiceTest {
     @Mock
     private InvestigationService investigationService;
 
+    @Mock
+    private com.bankingplatform.opsagent.metrics.OpsAgentMetrics opsAgentMetrics;
+
     private IncidentStore incidentStore;
     private AlertmanagerWebhookService service;
     private final ObjectMapper mapper = new ObjectMapper();
@@ -33,7 +36,7 @@ class AlertmanagerWebhookServiceTest {
         incidentStore = new IncidentStore();
         OpsAgentProperties properties = new OpsAgentProperties();
         properties.setAutoInvestigate(true);
-        service = new AlertmanagerWebhookService(incidentStore, investigationService, properties, null);
+        service = new AlertmanagerWebhookService(incidentStore, investigationService, properties, opsAgentMetrics);
     }
 
     @Test

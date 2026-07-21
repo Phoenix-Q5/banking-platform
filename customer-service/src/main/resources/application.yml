@@ -72,6 +72,11 @@ logging:
 harbor:
   kafka:
     enabled: ${HARBOR_KAFKA_ENABLED:true}
+  keycloak:
+    server-url: ${KEYCLOAK_SERVER_URL:http://localhost:8180}
+    realm: ${KEYCLOAK_REALM:banking}
+    admin-username: ${KEYCLOAK_ADMIN_USERNAME:admin}
+    admin-password: ${KEYCLOAK_ADMIN_PASSWORD:admin}
 
 springdoc:
   api-docs:

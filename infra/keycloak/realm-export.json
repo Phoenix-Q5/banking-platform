@@ -2,6 +2,13 @@
   "realm": "banking",
   "enabled": true,
   "sslRequired": "none",
+  "registrationAllowed": false,
+  "resetPasswordAllowed": true,
+  "editUsernameAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "rememberMe": true,
+  "verifyEmail": false,
   "roles": {
     "realm": [
       {
@@ -26,14 +33,18 @@
       "redirectUris": [
         "http://localhost:3001/*",
         "http://localhost:5173/*",
+        "http://localhost:8085/*",
         "http://127.0.0.1:3001/*",
-        "http://127.0.0.1:5173/*"
+        "http://127.0.0.1:5173/*",
+        "http://127.0.0.1:8085/*"
       ],
       "webOrigins": [
         "http://localhost:3001",
         "http://localhost:5173",
+        "http://localhost:8085",
         "http://127.0.0.1:3001",
-        "http://127.0.0.1:5173"
+        "http://127.0.0.1:5173",
+        "http://127.0.0.1:8085"
       ],
       "standardFlowEnabled": true,
       "directAccessGrantsEnabled": true,
@@ -64,14 +75,28 @@
       "standardFlowEnabled": false,
       "directAccessGrantsEnabled": false,
       "protocol": "openid-connect",
-      "description": "Client-credentials client for service-to-service calls (e.g. an AI agent hitting internal APIs)"
+      "description": "Client-credentials client for service-to-service calls (customer registration, ops tooling)"
     }
   ],
   "users": [
     {
+      "username": "service-account-banking-service-client",
+      "enabled": true,
+      "serviceAccountClientId": "banking-service-client",
+      "clientRoles": {
+        "realm-management": [
+          "manage-users",
+          "view-users",
+          "query-users",
+          "view-realm"
+        ]
+      }
+    },
+    {
       "username": "demo.customer",
       "enabled": true,
       "email": "demo.customer@example.com",
+      "emailVerified": true,
       "firstName": "Demo",
       "lastName": "Customer",
       "credentials": [
@@ -89,6 +114,7 @@
       "username": "demo.admin",
       "enabled": true,
       "email": "demo.admin@example.com",
+      "emailVerified": true,
       "firstName": "Demo",
       "lastName": "Admin",
       "credentials": [
@@ -107,6 +133,7 @@
       "username": "demo.support",
       "enabled": true,
       "email": "demo.support@example.com",
+      "emailVerified": true,
       "firstName": "Casey",
       "lastName": "Support",
       "credentials": [

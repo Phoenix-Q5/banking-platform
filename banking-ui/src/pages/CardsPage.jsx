@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { api } from '../api'
 import { useAuth } from '../auth'
 import CardArt from '../components/CardArt'
@@ -14,7 +15,12 @@ export default function CardsPage() {
   const [accounts, setAccounts] = useState([])
   const [cards, setCards] = useState([])
   const [error, setError] = useState('')
+  const [ok, setOk] = useState('')
   const [busy, setBusy] = useState(false)
+  const [issueForm, setIssueForm] = useState({
+    accountId: '', cardType: 'DEBIT', cardNetwork: 'VISA', dailyLimit: '1000', monthlyLimit: '10000',
+  })
+  const [limitsEdit, setLimitsEdit] = useState({})
 
   const load = async () => {
     try {
@@ -24,6 +30,17 @@ export default function CardsPage() {
       ])
       setAccounts(a)
       setCards(c)
+      if (a[0]) {
+        setIssueForm((f) => ({ ...f, accountId: f.accountId || a[0].id }))
+      }
+      const next = {}
+      c.forEach((card) => {
+        next[card.id] = {
+          dailyLimit: String(card.dailyLimit ?? 1000),
+          monthlyLimit: String(card.monthlyLimit ?? 10000),
+        }
+      })
+      setLimitsEdit(next)
     } catch (err) {
       setError(err.message)
     }
@@ -31,19 +48,22 @@ export default function CardsPage() {
 
   useEffect(() => { load() }, [])
 
-  const issue = async () => {
-    if (!accounts[0]) { setError('Open an account first from Overview'); return }
+  const issue = async (e) => {
+    e.preventDefault()
+    if (!issueForm.accountId) { setError('Open an account first'); return }
     setBusy(true)
     setError('')
+    setOk('')
     try {
       await api.issueCard(token, {
         customerId,
-        accountId: accounts[0].id,
-        cardType: 'DEBIT',
-        cardNetwork: 'VISA',
-        dailyLimit: 1000,
-        monthlyLimit: 10000,
+        accountId: issueForm.accountId,
+        cardType: issueForm.cardType,
+        cardNetwork: issueForm.cardNetwork,
+        dailyLimit: Number(issueForm.dailyLimit),
+        monthlyLimit: Number(issueForm.monthlyLimit),
       })
+      setOk('Card issued')
       await load()
     } catch (err) {
       setError(err.message)
@@ -66,30 +86,99 @@ export default function CardsPage() {
     }
   }
 
+  const saveLimits = async (cardId) => {
+    const lim = limitsEdit[cardId]
+    if (!lim) return
+    setBusy(true)
+    setError('')
+    setOk('')
+    try {
+      await api.updateCardLimits(token, cardId, {
+        dailyLimit: Number(lim.dailyLimit),
+        monthlyLimit: Number(lim.monthlyLimit),
+      })
+      setOk('Limits updated')
+      await load()
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
   const holderName = [session.name].filter(Boolean).join(' ').toUpperCase() || 'HARBOR MEMBER'
 
   return (
     <div>
       <h1 className="page-title">Cards</h1>
-      <p className="page-sub">Your Harbor Bank cards — freeze, unfreeze, and manage limits instantly.</p>
+      <p className="page-sub">Issue cards, freeze them instantly, and manage spend limits.</p>
 
       {error && <div className="error" style={{ marginBottom: 12 }}>{error}</div>}
+      {ok && <div className="banner ok" style={{ marginBottom: 12 }}>{ok}</div>}
 
-      <div className="actions" style={{ marginBottom: 24 }}>
-        <button className="primary" disabled={busy} onClick={issue}>+ Issue debit card</button>
-      </div>
+      <section className="panel" style={{ marginBottom: 24 }}>
+        <h2>Issue a card</h2>
+        {accounts.length === 0 ? (
+          <div className="empty">
+            Open an account first from <Link to="/accounts/open" style={{ color: 'var(--sea)' }}>Open Account</Link>.
+          </div>
+        ) : (
+          <form className="form" onSubmit={issue}>
+            <div className="grid two" style={{ gap: 12 }}>
+              <label>
+                Linked account
+                <select
+                  required
+                  value={issueForm.accountId}
+                  onChange={(e) => setIssueForm({ ...issueForm, accountId: e.target.value })}
+                >
+                  {accounts.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.accountNumber} · {money(a.balance, a.currency)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Type
+                <select value={issueForm.cardType} onChange={(e) => setIssueForm({ ...issueForm, cardType: e.target.value })}>
+                  <option value="DEBIT">Debit</option>
+                  <option value="CREDIT">Credit</option>
+                </select>
+              </label>
+              <label>
+                Network
+                <select value={issueForm.cardNetwork} onChange={(e) => setIssueForm({ ...issueForm, cardNetwork: e.target.value })}>
+                  <option value="VISA">Visa</option>
+                  <option value="MASTERCARD">Mastercard</option>
+                </select>
+              </label>
+              <label>
+                Daily limit
+                <input type="number" min="1" step="1" value={issueForm.dailyLimit} onChange={(e) => setIssueForm({ ...issueForm, dailyLimit: e.target.value })} />
+              </label>
+              <label>
+                Monthly limit
+                <input type="number" min="1" step="1" value={issueForm.monthlyLimit} onChange={(e) => setIssueForm({ ...issueForm, monthlyLimit: e.target.value })} />
+              </label>
+            </div>
+            <div className="actions">
+              <button className="primary" disabled={busy}>+ Issue card</button>
+              <Link to="/products" className="secondary" style={{ padding: '10px 14px' }}>Browse products</Link>
+            </div>
+          </form>
+        )}
+      </section>
 
       {cards.length === 0 ? (
         <section className="panel" style={{ textAlign: 'center', padding: '40px 24px', color: 'var(--muted)' }}>
-          <div style={{ fontSize: '2.5rem', marginBottom: 12 }}>💳</div>
           <div style={{ fontWeight: 600, marginBottom: 6 }}>No cards yet</div>
-          <div style={{ fontSize: '0.9rem' }}>Issue your first debit card above, or visit <strong>Products</strong> to browse all card options.</div>
+          <div style={{ fontSize: '0.9rem' }}>Issue your first card above.</div>
         </section>
       ) : (
         <div className="cards-gallery">
           {cards.map((card) => (
             <div className="card-tile" key={card.id}>
-              {/* Physical card render */}
               <CardArt
                 cardType={card.cardType}
                 cardNetwork={card.cardNetwork}
@@ -98,26 +187,43 @@ export default function CardsPage() {
                 expiresOn={card.expiresOn}
                 status={card.status}
               />
-
-              {/* Metadata + controls */}
               <div className="card-tile-meta">
                 <div className="card-meta-row">
                   <span className="card-meta-label">Type</span>
                   <span className="card-meta-value">{card.cardType} · {card.cardNetwork}</span>
                 </div>
                 <div className="card-meta-row">
-                  <span className="card-meta-label">Daily limit</span>
-                  <span className="card-meta-value">{money(card.dailyLimit)}</span>
-                </div>
-                <div className="card-meta-row">
-                  <span className="card-meta-label">Monthly limit</span>
-                  <span className="card-meta-value">{money(card.monthlyLimit)}</span>
-                </div>
-                <div className="card-meta-row">
                   <span className="card-meta-label">Status</span>
                   <span className={`badge ${card.status}`}>{card.status}</span>
                 </div>
-                <div style={{ marginTop: 4 }}>
+                <label style={{ marginTop: 8, fontSize: '0.85rem' }}>
+                  Daily limit
+                  <input
+                    type="number"
+                    min="1"
+                    value={limitsEdit[card.id]?.dailyLimit ?? ''}
+                    onChange={(e) => setLimitsEdit({
+                      ...limitsEdit,
+                      [card.id]: { ...limitsEdit[card.id], dailyLimit: e.target.value },
+                    })}
+                  />
+                </label>
+                <label style={{ marginTop: 8, fontSize: '0.85rem' }}>
+                  Monthly limit
+                  <input
+                    type="number"
+                    min="1"
+                    value={limitsEdit[card.id]?.monthlyLimit ?? ''}
+                    onChange={(e) => setLimitsEdit({
+                      ...limitsEdit,
+                      [card.id]: { ...limitsEdit[card.id], monthlyLimit: e.target.value },
+                    })}
+                  />
+                </label>
+                <div className="actions" style={{ marginTop: 10, flexDirection: 'column' }}>
+                  <button className="secondary" style={{ width: '100%' }} disabled={busy} onClick={() => saveLimits(card.id)}>
+                    Save limits
+                  </button>
                   {card.status !== 'CANCELLED' && card.status !== 'EXPIRED' && (
                     <button
                       className={card.status === 'FROZEN' ? 'primary' : 'secondary'}
@@ -125,7 +231,7 @@ export default function CardsPage() {
                       disabled={busy}
                       onClick={() => toggleFreeze(card)}
                     >
-                      {card.status === 'FROZEN' ? '🔓 Unfreeze card' : '🔒 Freeze card'}
+                      {card.status === 'FROZEN' ? 'Unfreeze card' : 'Freeze card'}
                     </button>
                   )}
                 </div>

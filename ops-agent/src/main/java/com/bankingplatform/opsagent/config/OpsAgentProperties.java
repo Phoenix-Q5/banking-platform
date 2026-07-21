@@ -15,6 +15,8 @@ public class OpsAgentProperties {
     private Observability observability = new Observability();
     private Map<String, String> services = new LinkedHashMap<>();
     private Llm llm = new Llm();
+    private Security security = new Security();
+    private Persistence persistence = new Persistence();
 
     public String getPlatformName() {
         return platformName;
@@ -70,6 +72,61 @@ public class OpsAgentProperties {
 
     public void setLlm(Llm llm) {
         this.llm = llm;
+    }
+
+    public Security getSecurity() {
+        return security;
+    }
+
+    public void setSecurity(Security security) {
+        this.security = security;
+    }
+
+    public Persistence getPersistence() {
+        return persistence;
+    }
+
+    public void setPersistence(Persistence persistence) {
+        this.persistence = persistence;
+    }
+
+    public static class Security {
+        /** When true, privileged endpoints require a Keycloak JWT with ADMIN/SUPPORT roles. */
+        private boolean enabled = false;
+        /** Browser-facing Keycloak token endpoint used by the ops console login form. */
+        private String keycloakTokenUrl = "http://localhost:8180/realms/banking/protocol/openid-connect/token";
+
+        public boolean isEnabled() {
+            return enabled;
+        }
+
+        public void setEnabled(boolean enabled) {
+            this.enabled = enabled;
+        }
+
+        public String getKeycloakTokenUrl() {
+            return keycloakTokenUrl;
+        }
+
+        public void setKeycloakTokenUrl(String keycloakTokenUrl) {
+            this.keycloakTokenUrl = keycloakTokenUrl;
+        }
+    }
+
+    public static class Persistence {
+        /**
+         * When true, incidents and restart requests are persisted to PostgreSQL.
+         * The datasource itself is configured via standard spring.datasource.* properties.
+         */
+        private boolean enabled = false;
+
+        public boolean isEnabled() {
+            return enabled;
+        }
+
+        public void setEnabled(boolean enabled) {
+            this.enabled = enabled;
+        }
     }
 
     public static class Observability {

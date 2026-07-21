@@ -28,6 +28,23 @@ public final class CustomerDtos {
         @Size(min = 2, max = 2) String country
     ) {}
 
+    /** Self-serve registration: creates Keycloak credentials + customer profile. */
+    public record RegisterCustomerRequest(
+        @NotBlank @Size(min = 3, max = 64) String username,
+        @NotBlank @Size(min = 8, max = 128) String password,
+        @NotBlank @Email String email,
+        @NotBlank @Size(max = 100) String firstName,
+        @NotBlank @Size(max = 100) String lastName,
+        String phone,
+        LocalDate dateOfBirth,
+        String addressLine1,
+        String addressLine2,
+        String city,
+        String state,
+        String postalCode,
+        @Size(min = 2, max = 2) String country
+    ) {}
+
     public record UpdateCustomerRequest(
         String phone,
         String addressLine1,

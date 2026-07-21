@@ -1,5 +1,6 @@
 package com.bankingplatform.notification.controller;
 
+import com.bankingplatform.notification.email.EmailNotificationDispatcher;
 import com.bankingplatform.notification.model.Notification;
 import com.bankingplatform.notification.push.PushNotificationDispatcher;
 import com.bankingplatform.notification.repository.DeviceTokenRepository;
@@ -33,13 +34,16 @@ public class InternalNotificationController {
     private final NotificationRepository notificationRepository;
     private final DeviceTokenRepository deviceTokenRepository;
     private final PushNotificationDispatcher pushDispatcher;
+    private final EmailNotificationDispatcher emailDispatcher;
 
     public InternalNotificationController(NotificationRepository notificationRepository,
                                           DeviceTokenRepository deviceTokenRepository,
-                                          PushNotificationDispatcher pushDispatcher) {
+                                          PushNotificationDispatcher pushDispatcher,
+                                          EmailNotificationDispatcher emailDispatcher) {
         this.notificationRepository = notificationRepository;
         this.deviceTokenRepository = deviceTokenRepository;
         this.pushDispatcher = pushDispatcher;
+        this.emailDispatcher = emailDispatcher;
     }
 
     public record ServiceAlertRequest(
@@ -87,6 +91,46 @@ public class InternalNotificationController {
         result.put("devicesPushed", pushed);
         result.put("registeredDevices", deviceTokenRepository.findByCustomerIdAndActiveTrue(SERVICE_ALERT_AUDIENCE_ID).size());
         log.info("service_alert_ingested incidentId={} created={} pushed={}", request.incidentId(), created, pushed);
+        return result;
+    }
+
+    public record OpsEmailRequest(
+        @NotBlank String subject,
+        @NotBlank String body,
+        String priority,
+        String incidentId,
+        String affectedService
+    ) {}
+
+    /**
+     * High-priority ops team email (ops-agent → on-call mailboxes). Each call
+     * is a distinct notification (no dedupe): operators may legitimately
+     * escalate the same incident multiple times.
+     */
+    @PostMapping("/ops-email")
+    @ResponseStatus(HttpStatus.CREATED)
+    public Map<String, Object> sendOpsEmail(@Valid @RequestBody OpsEmailRequest request) {
+        EmailNotificationDispatcher.Result dispatch = emailDispatcher.send(request.subject(), request.body());
+
+        Notification n = new Notification();
+        n.setCustomerId(SERVICE_ALERT_AUDIENCE_ID);
+        n.setChannel(Notification.Channel.EMAIL);
+        n.setCategory("SERVICE_OPS_EMAIL");
+        n.setTitle(request.subject());
+        n.setBody(request.body() + (request.affectedService() == null ? "" : " [" + request.affectedService() + "]"));
+        n.setEventId((request.incidentId() == null ? "ops" : request.incidentId()) + ":email:" + UUID.randomUUID());
+        n.setEventType("service.ops-email");
+        n.setStatus(dispatch.success() ? Notification.Status.SENT : Notification.Status.FAILED);
+        Notification saved = notificationRepository.save(n);
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("notificationId", saved.getId().toString());
+        result.put("mode", dispatch.mode());
+        result.put("recipients", dispatch.recipients());
+        result.put("success", dispatch.success());
+        result.put("detail", dispatch.detail());
+        log.info("ops_email_ingested incidentId={} priority={} mode={} success={}",
+            request.incidentId(), request.priority(), dispatch.mode(), dispatch.success());
         return result;
     }
 }

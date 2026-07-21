@@ -98,6 +98,7 @@ public class AlertmanagerWebhookService {
             primary.path("labels").path("job").asText(null)
         ));
         incident.setSeverity(mapSeverity(primary.path("labels").path("severity").asText("warning")));
+        parseInstant(primary.path("startsAt").asText(null)).ifPresent(incident::setOccurredAt);
         incident.getAlertFingerprints().add(fingerprint);
         for (JsonNode alert : alerts) {
             String fp = alert.path("fingerprint").asText(null);
@@ -124,6 +125,17 @@ public class AlertmanagerWebhookService {
             case "info", "none" -> Incident.Severity.INFO;
             default -> Incident.Severity.WARNING;
         };
+    }
+
+    private Optional<java.time.Instant> parseInstant(String iso) {
+        if (iso == null || iso.isBlank() || iso.startsWith("0001-")) {
+            return Optional.empty();
+        }
+        try {
+            return Optional.of(java.time.OffsetDateTime.parse(iso).toInstant());
+        } catch (Exception ex) {
+            return Optional.empty();
+        }
     }
 
     private String firstNonBlank(String... values) {

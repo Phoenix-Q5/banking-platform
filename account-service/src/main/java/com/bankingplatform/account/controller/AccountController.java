@@ -3,6 +3,7 @@ package com.bankingplatform.account.controller;
 import com.bankingplatform.account.dto.AccountResponse;
 import com.bankingplatform.account.dto.BalanceAdjustmentRequest;
 import com.bankingplatform.account.dto.CreateAccountRequest;
+import com.bankingplatform.account.dto.DepositRequest;
 import com.bankingplatform.account.exception.AccountNotFoundException;
 import com.bankingplatform.account.exception.InsufficientFundsException;
 import com.bankingplatform.account.model.Account;
@@ -91,6 +92,21 @@ public class AccountController {
         Account saved = accountRepository.save(account);
         log.info("account_credited accountId={} txnId={} amount={} newBalance={}", id, request.transactionId(), request.amount(), saved.getBalance());
         return ResponseEntity.ok(AccountResponse.from(saved));
+    }
+
+    /** Customer-facing demo funding (authenticated via gateway JWT). */
+    @PostMapping("/{id}/deposit")
+    @Transactional
+    public AccountResponse deposit(@PathVariable("id") UUID id, @Valid @RequestBody DepositRequest request) {
+        Account account = accountRepository.findByIdForUpdate(id).orElseThrow(() -> new AccountNotFoundException(id));
+        if (account.getStatus() != Account.AccountStatus.ACTIVE) {
+            throw new IllegalArgumentException("Account is not active");
+        }
+        account.setBalance(account.getBalance().add(request.amount()));
+        Account saved = accountRepository.save(account);
+        log.info("account_deposit accountId={} amount={} memo={} newBalance={}",
+            id, request.amount(), request.memo(), saved.getBalance());
+        return AccountResponse.from(saved);
     }
 
     private Account findOrThrow(UUID id) {

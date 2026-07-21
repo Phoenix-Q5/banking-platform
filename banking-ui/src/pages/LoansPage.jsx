@@ -6,11 +6,37 @@ function money(amount, currency = 'USD') {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(Number(amount || 0))
 }
 
+const STATUS_STEPS = ['APPLIED', 'UNDER_REVIEW', 'APPROVED', 'ACTIVE']
+
+function StatusTimeline({ status }) {
+  if (status === 'REJECTED' || status === 'CLOSED') {
+    return (
+      <div className="loan-timeline">
+        <div className={`loan-step done`}>{status === 'REJECTED' ? 'Rejected' : 'Closed'}</div>
+      </div>
+    )
+  }
+  const idx = STATUS_STEPS.indexOf(status)
+  return (
+    <div className="loan-timeline">
+      {STATUS_STEPS.map((step, i) => {
+        const state = i < idx ? 'done' : i === idx ? 'active' : ''
+        return (
+          <div key={step} className={`loan-step ${state}`}>
+            {step.replace('_', ' ')}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 export default function LoansPage() {
   const { session } = useAuth()
   const token = session.accessToken
   const customerId = session.customerId
   const [loans, setLoans] = useState([])
+  const [selected, setSelected] = useState(null)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [form, setForm] = useState({
@@ -24,7 +50,12 @@ export default function LoansPage() {
 
   const load = async () => {
     try {
-      setLoans(await api.listLoans(token, customerId))
+      const list = await api.listLoans(token, customerId)
+      setLoans(list)
+      if (selected) {
+        const refreshed = list.find((l) => l.id === selected.id)
+        setSelected(refreshed || null)
+      }
     } catch (err) {
       setError(err.message)
     }
@@ -37,7 +68,7 @@ export default function LoansPage() {
     setBusy(true)
     setError('')
     try {
-      await api.applyLoan(token, {
+      const created = await api.applyLoan(token, {
         customerId,
         productCode: form.productCode,
         principal: Number(form.principal),
@@ -47,6 +78,7 @@ export default function LoansPage() {
         purpose: form.purpose,
       })
       await load()
+      setSelected(created)
     } catch (err) {
       setError(err.message)
     } finally {
@@ -57,7 +89,7 @@ export default function LoansPage() {
   return (
     <div>
       <h1 className="page-title">Loans</h1>
-      <p className="page-sub">Apply for personal loans and track underwriting status.</p>
+      <p className="page-sub">Apply for personal loans and track underwriting from application to funding.</p>
       {error && <div className="error" style={{ marginBottom: 12 }}>{error}</div>}
 
       <div className="grid two">
@@ -86,7 +118,11 @@ export default function LoansPage() {
               <thead><tr><th>Product</th><th>Principal</th><th>Payment</th><th>Status</th></tr></thead>
               <tbody>
                 {loans.map((l) => (
-                  <tr key={l.id}>
+                  <tr
+                    key={l.id}
+                    onClick={() => setSelected(l)}
+                    style={{ cursor: 'pointer', background: selected?.id === l.id ? 'var(--sand)' : undefined }}
+                  >
                     <td>{l.productCode}<div className="muted">{l.termMonths} mo · {l.interestRate}% APR</div></td>
                     <td>{money(l.principal, l.currency)}</td>
                     <td>{money(l.monthlyPayment, l.currency)} / mo</td>
@@ -98,6 +134,57 @@ export default function LoansPage() {
           )}
         </section>
       </div>
+
+      {selected && (
+        <section className="panel" style={{ marginTop: 16 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+            <h2 style={{ margin: 0 }}>Loan detail</h2>
+            <button className="secondary" onClick={() => setSelected(null)}>Close</button>
+          </div>
+          <StatusTimeline status={selected.status} />
+          <div className="grid two" style={{ marginTop: 16 }}>
+            <div>
+              <div className="detail-row">
+                <span className="detail-label">Product</span>
+                <span className="detail-value">{selected.productCode}</span>
+              </div>
+              <div className="detail-row">
+                <span className="detail-label">Purpose</span>
+                <span className="detail-value">{selected.purpose || '—'}</span>
+              </div>
+              <div className="detail-row">
+                <span className="detail-label">Applied</span>
+                <span className="detail-value">{selected.createdAt ? new Date(selected.createdAt).toLocaleString() : '—'}</span>
+              </div>
+              <div className="detail-row">
+                <span className="detail-label">Updated</span>
+                <span className="detail-value">{selected.updatedAt ? new Date(selected.updatedAt).toLocaleString() : '—'}</span>
+              </div>
+            </div>
+            <div>
+              <div className="detail-row">
+                <span className="detail-label">Principal</span>
+                <span className="detail-value">{money(selected.principal, selected.currency)}</span>
+              </div>
+              <div className="detail-row">
+                <span className="detail-label">Monthly payment</span>
+                <span className="detail-value">{money(selected.monthlyPayment, selected.currency)}</span>
+              </div>
+              <div className="detail-row">
+                <span className="detail-label">Outstanding</span>
+                <span className="detail-value">{money(selected.outstandingBalance, selected.currency)}</span>
+              </div>
+              <div className="detail-row">
+                <span className="detail-label">APR / term</span>
+                <span className="detail-value">{selected.interestRate}% · {selected.termMonths} mo</span>
+              </div>
+            </div>
+          </div>
+          <p className="muted" style={{ marginTop: 12, fontSize: '0.85rem' }}>
+            Underwriting decisions are completed by bank admins. You will see status move through review → approved → active.
+          </p>
+        </section>
+      )}
     </div>
   )
 }

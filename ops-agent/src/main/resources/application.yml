@@ -7,6 +7,12 @@ spring:
   jackson:
     serialization:
       write-dates-as-timestamps: false
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8180/realms/banking}
+          jwk-set-uri: ${KEYCLOAK_JWK_URI:http://localhost:8180/realms/banking/protocol/openid-connect/certs}
 
 management:
   endpoints:
@@ -24,6 +30,15 @@ management:
 
 ops-agent:
   platform-name: ${PLATFORM_NAME:harbor-bank}
+  security:
+    # When true, incident workflow requires a Keycloak JWT (ADMIN/SUPPORT);
+    # restart confirmation requires ADMIN.
+    enabled: ${OPS_SECURITY_ENABLED:false}
+    keycloak-token-url: ${OPS_KEYCLOAK_TOKEN_URL:http://localhost:8180/realms/banking/protocol/openid-connect/token}
+  persistence:
+    # When true, incidents/restart requests persist to PostgreSQL
+    # (configure the datasource via SPRING_DATASOURCE_* env vars).
+    enabled: ${OPS_PERSISTENCE_ENABLED:false}
   auto-investigate: ${AUTO_INVESTIGATE:true}
   max-tool-rounds: ${MAX_TOOL_ROUNDS:6}
   mitigation-mode: ${MITIGATION_MODE:recommend} # recommend | auto

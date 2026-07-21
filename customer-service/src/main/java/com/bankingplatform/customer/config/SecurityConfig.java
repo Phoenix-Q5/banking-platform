@@ -16,8 +16,8 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/actuator/health/**", "/actuator/prometheus", "/actuator/info").permitAll()
                 .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
-                // public — self-registration does not require an existing session
-                .requestMatchers(HttpMethod.POST, "/api/customers").permitAll()
+                // public — self-registration creates Keycloak credentials + profile
+                .requestMatchers(HttpMethod.POST, "/api/customers/register").permitAll()
                 .anyRequest().authenticated()
             )
             .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> {}));

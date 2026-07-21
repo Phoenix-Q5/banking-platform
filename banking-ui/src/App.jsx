@@ -14,6 +14,8 @@ import ProductsPage from './pages/ProductsPage'
 import OnboardingPage from './pages/OnboardingPage'
 import OpenAccountPage from './pages/OpenAccountPage'
 import AccountDetailPage from './pages/AccountDetailPage'
+import ProfilePage from './pages/ProfilePage'
+import FundsPage from './pages/FundsPage'
 
 function Shell({ children }) {
   const { session, logout, isAdmin, isSupport, isCustomer } = useAuth()
@@ -25,12 +27,14 @@ function Shell({ children }) {
           {isCustomer && (
             <>
               <NavLink to="/" end>Overview</NavLink>
+              <NavLink to="/funds">Funds</NavLink>
               <NavLink to="/products">Products</NavLink>
               <NavLink to="/accounts/open">Open Account</NavLink>
               <NavLink to="/payments">Payments</NavLink>
               <NavLink to="/cards">Cards</NavLink>
               <NavLink to="/loans">Loans</NavLink>
               <NavLink to="/notifications">Alerts</NavLink>
+              <NavLink to="/profile">Profile</NavLink>
             </>
           )}
           {isSupport && <NavLink to="/support">Support</NavLink>}
@@ -42,7 +46,12 @@ function Shell({ children }) {
           )}
           <button className="linkish" onClick={logout}>Sign out</button>
         </nav>
-        <div className="user-chip">{session?.name} · {session?.roles?.join(', ')}</div>
+        <div className="user-chip">
+          @{session?.username}
+          {session?.name ? ` · ${session.name}` : ''}
+          {' · '}
+          {session?.roles?.join(', ')}
+        </div>
       </header>
       {children}
     </div>
@@ -63,7 +72,6 @@ export default function App() {
 
   return (
     <Routes>
-      {/* Public routes — no authentication required */}
       <Route path="/login" element={isAuthenticated ? <Navigate to="/" replace /> : <LoginPage />} />
       <Route path="/register" element={isAuthenticated ? <Navigate to="/" replace /> : <RegisterPage />} />
       <Route path="/card-offers" element={<CardOffersPage />} />
@@ -77,6 +85,8 @@ export default function App() {
           </RequireAuth>
         }
       />
+      <Route path="/funds" element={<RequireAuth role="CUSTOMER"><Shell><FundsPage /></Shell></RequireAuth>} />
+      <Route path="/profile" element={<RequireAuth role="CUSTOMER"><Shell><ProfilePage /></Shell></RequireAuth>} />
       <Route path="/payments" element={<RequireAuth role="CUSTOMER"><Shell><PaymentsPage /></Shell></RequireAuth>} />
       <Route path="/cards" element={<RequireAuth role="CUSTOMER"><Shell><CardsPage /></Shell></RequireAuth>} />
       <Route path="/loans" element={<RequireAuth role="CUSTOMER"><Shell><LoansPage /></Shell></RequireAuth>} />

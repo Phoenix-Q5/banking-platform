@@ -34,53 +34,25 @@
         linear-gradient(180deg, #e8eef5 0%, var(--paper) 45%, #eef3f7 100%);
     }
 
-    .shell {
-      max-width: 1180px;
-      margin: 0 auto;
-      padding: 28px 20px 48px;
-    }
+    .shell { max-width: 1280px; margin: 0 auto; padding: 28px 20px 48px; }
 
-    header {
-      display: grid;
-      gap: 10px;
-      margin-bottom: 28px;
-    }
+    header { display: grid; gap: 10px; margin-bottom: 22px; }
 
     .brand {
       font-family: "Source Serif 4", Georgia, serif;
-      font-size: clamp(2rem, 4vw, 3rem);
+      font-size: clamp(1.8rem, 4vw, 2.6rem);
       font-weight: 700;
       letter-spacing: -0.02em;
       line-height: 1.05;
-      color: var(--ink);
     }
 
-    .tagline {
-      max-width: 46rem;
-      color: var(--muted);
-      font-size: 1.05rem;
-      line-height: 1.5;
-    }
+    .tagline { max-width: 46rem; color: var(--muted); font-size: 1rem; line-height: 1.5; margin: 0; }
 
-    .meta {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px 18px;
-      color: var(--muted);
-      font-size: 0.92rem;
-    }
-
+    .meta { display: flex; flex-wrap: wrap; gap: 8px 18px; color: var(--muted); font-size: 0.9rem; align-items: center; }
     .meta strong { color: var(--ink); font-weight: 600; }
 
-    .layout {
-      display: grid;
-      grid-template-columns: 1.15fr 0.85fr;
-      gap: 18px;
-    }
-
-    @media (max-width: 900px) {
-      .layout { grid-template-columns: 1fr; }
-    }
+    .layout { display: grid; grid-template-columns: 0.95fr 1.05fr; gap: 18px; align-items: start; }
+    @media (max-width: 980px) { .layout { grid-template-columns: 1fr; } }
 
     .panel {
       background: var(--panel);
@@ -89,6 +61,7 @@
       box-shadow: var(--shadow);
       border-radius: 4px;
       padding: 18px;
+      margin-bottom: 18px;
     }
 
     h2 {
@@ -100,78 +73,65 @@
       font-weight: 600;
     }
 
-    textarea, input, select, button {
-      font: inherit;
-    }
+    h3 { margin: 16px 0 8px; font-size: 0.92rem; }
+
+    textarea, input, select, button { font: inherit; }
 
     textarea {
       width: 100%;
-      min-height: 110px;
+      min-height: 90px;
       resize: vertical;
       border: 1px solid var(--line);
       background: #fff;
       color: var(--ink);
-      padding: 12px 14px;
+      padding: 10px 12px;
       border-radius: 2px;
     }
 
-    .row {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      margin-top: 12px;
+    input[type="text"], input[type="password"], select {
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--ink);
+      padding: 8px 10px;
+      border-radius: 2px;
     }
+
+    .row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; align-items: center; }
 
     button {
       border: 0;
       background: var(--accent);
       color: white;
-      padding: 10px 16px;
+      padding: 8px 14px;
       border-radius: 2px;
       cursor: pointer;
       font-weight: 550;
     }
 
-    button.secondary {
-      background: transparent;
-      color: var(--accent-2);
-      border: 1px solid var(--line);
-    }
-
-    button:disabled {
-      opacity: 0.55;
-      cursor: wait;
-    }
+    button.secondary { background: transparent; color: var(--accent-2); border: 1px solid var(--line); }
+    button.danger { background: var(--crit); }
+    button.warn { background: var(--warn); }
+    button:disabled { opacity: 0.55; cursor: wait; }
 
     .reply {
-      margin-top: 16px;
+      margin-top: 14px;
       white-space: pre-wrap;
       line-height: 1.55;
-      font-size: 0.95rem;
-      color: var(--ink);
+      font-size: 0.93rem;
       border-top: 1px solid var(--line);
-      padding-top: 14px;
-      max-height: 420px;
+      padding-top: 12px;
+      max-height: 360px;
       overflow: auto;
     }
 
-    .incident {
-      border-bottom: 1px solid var(--line);
-      padding: 12px 0;
-      cursor: pointer;
-    }
-
+    .incident { border-bottom: 1px solid var(--line); padding: 11px 0; cursor: pointer; }
     .incident:last-child { border-bottom: 0; }
-    .incident:hover { background: rgba(28, 77, 122, 0.04); }
-
-    .incident-title {
-      font-weight: 600;
-      margin-bottom: 4px;
-    }
+    .incident:hover, .incident.selected { background: rgba(28, 77, 122, 0.05); }
+    .incident-title { font-weight: 600; margin-bottom: 4px; }
 
     .badge {
       display: inline-block;
-      font-size: 0.72rem;
+      font-size: 0.7rem;
       letter-spacing: 0.04em;
       text-transform: uppercase;
       padding: 2px 7px;
@@ -180,12 +140,35 @@
       color: var(--muted);
     }
 
-    .badge.CRITICAL { color: var(--crit); border-color: rgba(155, 29, 45, 0.35); }
-    .badge.WARNING { color: var(--warn); border-color: rgba(154, 91, 0, 0.35); }
-    .badge.RESOLVED, .badge.CLOSED { color: var(--ok); border-color: rgba(11, 110, 79, 0.35); }
+    .badge.CRITICAL, .badge.P1 { color: var(--crit); border-color: rgba(155, 29, 45, 0.4); }
+    .badge.WARNING, .badge.P2 { color: var(--warn); border-color: rgba(154, 91, 0, 0.4); }
+    .badge.RESOLVED, .badge.CLOSED, .badge.CONFIRMED { color: var(--ok); border-color: rgba(11, 110, 79, 0.4); }
+    .badge.PENDING_CONFIRMATION { color: var(--warn); border-color: rgba(154, 91, 0, 0.4); }
+    .badge.CANCELLED { color: var(--muted); }
 
-    .muted { color: var(--muted); font-size: 0.88rem; }
+    .muted { color: var(--muted); font-size: 0.86rem; }
     .empty { color: var(--muted); padding: 8px 0; }
+
+    .kv { display: grid; grid-template-columns: 130px 1fr; gap: 4px 10px; font-size: 0.9rem; margin: 8px 0; }
+    .kv dt { color: var(--muted); }
+    .kv dd { margin: 0; }
+
+    .audit { font-size: 0.85rem; max-height: 180px; overflow: auto; border: 1px solid var(--line); padding: 8px 10px; background: #fff; }
+    .audit div { padding: 3px 0; border-bottom: 1px dashed var(--line); }
+    .audit div:last-child { border-bottom: 0; }
+
+    .mitigation { border: 1px solid var(--line); background: #fff; padding: 8px 10px; margin-bottom: 8px; font-size: 0.9rem; }
+
+    .toast {
+      position: fixed; right: 18px; bottom: 18px; max-width: 380px;
+      background: var(--ink); color: #fff; padding: 12px 16px; border-radius: 3px;
+      font-size: 0.9rem; opacity: 0; transition: opacity 0.25s; pointer-events: none; white-space: pre-wrap;
+    }
+    .toast.show { opacity: 0.96; }
+    .toast.error { background: var(--crit); }
+
+    #loginBar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .userchip { border: 1px solid var(--line); padding: 4px 10px; background: #fff; font-size: 0.88rem; }
   </style>
 </head>
 <body>
@@ -196,116 +179,467 @@
         Installable monitoring and troubleshooting agent for the banking platform.
         It correlates health, metrics, logs, and traces — then proposes mitigation and resiliency steps.
       </p>
-      <div class="meta" id="meta">
-        <span>Loading agent status…</span>
+      <div class="meta" id="meta"><span>Loading agent status…</span></div>
+      <div id="loginBar" hidden>
+        <input type="text" id="loginUser" placeholder="username (e.g. demo.admin)" autocomplete="username" />
+        <input type="password" id="loginPass" placeholder="password" autocomplete="current-password" />
+        <button id="loginBtn">Sign in</button>
+        <span class="muted">Privileged actions require an ADMIN or SUPPORT sign-in.</span>
+      </div>
+      <div id="userBar" hidden>
+        <span class="userchip">Signed in as <strong id="userName"></strong> (<span id="userRoles"></span>)</span>
+        <button class="secondary" id="logoutBtn">Sign out</button>
       </div>
     </header>
 
     <div class="layout">
-      <section class="panel">
-        <h2>Ask / Investigate</h2>
-        <textarea id="prompt" placeholder="Example: transaction-service circuit breaker is open and transfers are failing"></textarea>
-        <div class="row">
-          <button id="askBtn">Investigate</button>
-          <button class="secondary" id="refreshBtn">Refresh incidents</button>
-        </div>
-        <div class="reply" id="reply">Ask a question or describe a failure to generate an incident report.</div>
-      </section>
+      <div>
+        <section class="panel">
+          <h2>Ask / Investigate</h2>
+          <textarea id="prompt" placeholder="Example: transaction-service circuit breaker is open and transfers are failing"></textarea>
+          <div class="row">
+            <button id="askBtn">Investigate</button>
+            <button class="secondary" id="refreshBtn">Refresh</button>
+          </div>
+          <div class="reply" id="reply">Ask a question or describe a failure to generate an incident report.</div>
+        </section>
 
-      <section class="panel">
-        <h2>Incidents</h2>
-        <div id="incidents" class="empty">No incidents yet.</div>
-      </section>
+        <section class="panel">
+          <h2>Emergency Restart</h2>
+          <p class="muted" style="margin-top:0">
+            Restarts are two-person-safe: raise a request, then an ADMIN confirms it.
+            Confirmation is recorded, audited, health-probed, and emailed to the ops team.
+          </p>
+          <div class="row">
+            <select id="restartService"></select>
+            <input type="text" id="restartReason" placeholder="Reason (required)" style="flex:1; min-width:200px" />
+            <button class="danger" id="restartRequestBtn">Request restart</button>
+          </div>
+          <div id="restartList" class="empty" style="margin-top:12px">No restart requests.</div>
+        </section>
+      </div>
+
+      <div>
+        <section class="panel">
+          <h2>Incidents</h2>
+          <div id="incidents" class="empty">No incidents yet.</div>
+        </section>
+
+        <section class="panel" id="detailPanel" hidden>
+          <h2>Incident Detail</h2>
+          <div class="incident-title" id="dTitle"></div>
+          <div id="dBadges"></div>
+          <dl class="kv">
+            <dt>Occurred at</dt><dd id="dOccurred"></dd>
+            <dt>Created at</dt><dd id="dCreated"></dd>
+            <dt>Last updated</dt><dd id="dUpdated"></dd>
+            <dt>Resolved at</dt><dd id="dResolved"></dd>
+            <dt>Service</dt><dd id="dService"></dd>
+            <dt>Source</dt><dd id="dSource"></dd>
+            <dt>Root cause</dt><dd id="dRootCause"></dd>
+            <dt>Resolved by</dt><dd id="dResolvedBy"></dd>
+          </dl>
+
+          <h3>Status &amp; Priority</h3>
+          <div class="row">
+            <select id="statusSelect">
+              <option>OPEN</option><option>INVESTIGATING</option><option>MITIGATING</option>
+              <option>RESOLVED</option><option>CLOSED</option>
+            </select>
+            <button class="secondary" id="statusBtn">Change status</button>
+            <button class="warn" id="prioUpBtn">Upgrade priority</button>
+            <button class="secondary" id="prioDownBtn">Downgrade priority</button>
+          </div>
+
+          <h3>Resolution / Mitigation notes</h3>
+          <textarea id="resolutionNotes" placeholder="What fixed it, or what should be done…"></textarea>
+          <div class="row">
+            <button class="secondary" id="saveNotesBtn">Save notes</button>
+            <button id="resolveBtn">Save notes &amp; mark RESOLVED</button>
+          </div>
+
+          <h3>Proposed mitigations</h3>
+          <div id="dMitigations" class="empty">None proposed.</div>
+
+          <h3>Notify team</h3>
+          <div class="row">
+            <input type="text" id="notifyMessage" placeholder="Optional note to the on-call team" style="flex:1; min-width:220px" />
+            <button class="warn" id="notifyBtn">Send high-priority email</button>
+          </div>
+
+          <h3>Audit trail</h3>
+          <div class="audit" id="dAudit"></div>
+
+          <h3>Report</h3>
+          <div class="reply" id="dReport" style="border-top:0; padding-top:0; margin-top:4px">No report yet.</div>
+        </section>
+      </div>
     </div>
   </div>
 
-  <script>
-    const metaEl = document.getElementById('meta');
-    const incidentsEl = document.getElementById('incidents');
-    const replyEl = document.getElementById('reply');
-    const promptEl = document.getElementById('prompt');
-    const askBtn = document.getElementById('askBtn');
-    const refreshBtn = document.getElementById('refreshBtn');
+  <div class="toast" id="toast"></div>
 
-    async function loadMeta() {
-      const res = await fetch('/api/agent/health-summary');
-      const data = await res.json();
-      metaEl.innerHTML = `
-        <span><strong>Platform</strong> ${data.platform}</span>
-        <span><strong>Engine</strong> ${data.engine}</span>
-        <span><strong>LLM</strong> ${data.llmEnabled ? 'enabled' : 'heuristic fallback'}</span>
-        <span><strong>Mitigation</strong> ${data.mitigationMode}</span>
-        <span><strong>Open</strong> ${data.openIncidents}</span>
-      `;
+  <script>
+    const $ = id => document.getElementById(id);
+    let state = {
+      securityEnabled: false,
+      keycloakTokenUrl: null,
+      token: sessionStorage.getItem('ops_token') || null,
+      user: sessionStorage.getItem('ops_user') || null,
+      roles: JSON.parse(sessionStorage.getItem('ops_roles') || '[]'),
+      selectedIncident: null,
+    };
+
+    function toast(message, isError) {
+      const el = $('toast');
+      el.textContent = message;
+      el.className = 'toast show' + (isError ? ' error' : '');
+      clearTimeout(el._t);
+      el._t = setTimeout(() => el.className = 'toast', 4500);
     }
 
+    function escapeHtml(s) {
+      return String(s ?? '')
+        .replaceAll('&', '&amp;').replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;').replaceAll('"', '&quot;');
+    }
+
+    function fmtTime(v) {
+      if (v === null || v === undefined || v === '') return '—';
+      const d = typeof v === 'number' ? new Date(v * 1000) : new Date(v);
+      return isNaN(d) ? String(v) : d.toLocaleString(undefined, {
+        year: 'numeric', month: 'short', day: 'numeric',
+        hour: '2-digit', minute: '2-digit', second: '2-digit'
+      });
+    }
+
+    async function api(path, options = {}) {
+      options.headers = Object.assign({ 'Content-Type': 'application/json' }, options.headers || {});
+      if (state.token) options.headers['Authorization'] = 'Bearer ' + state.token;
+      const res = await fetch(path, options);
+      if (res.status === 401) {
+        clearAuth();
+        throw new Error('Session expired or sign-in required. Use the sign-in bar at the top.');
+      }
+      if (res.status === 403) {
+        throw new Error('Not permitted: this action needs a higher role (restart confirmation requires ADMIN).');
+      }
+      if (!res.ok) {
+        let msg = res.status + ' ' + res.statusText;
+        try { const body = await res.json(); msg = body.message || body.error || msg; } catch (e) {}
+        throw new Error(msg);
+      }
+      return res.status === 204 ? null : res.json();
+    }
+
+    // ---------- auth ----------
+    function decodeJwt(token) {
+      try { return JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))); }
+      catch (e) { return {}; }
+    }
+
+    function clearAuth() {
+      state.token = null; state.user = null; state.roles = [];
+      sessionStorage.removeItem('ops_token');
+      sessionStorage.removeItem('ops_user');
+      sessionStorage.removeItem('ops_roles');
+      renderAuth();
+    }
+
+    function renderAuth() {
+      const needsLogin = state.securityEnabled && !state.token;
+      $('loginBar').hidden = !needsLogin;
+      $('userBar').hidden = !(state.securityEnabled && state.token);
+      if (state.token) {
+        $('userName').textContent = state.user || 'operator';
+        $('userRoles').textContent = state.roles.filter(r => ['ADMIN','SUPPORT'].includes(r)).join(', ') || 'no ops roles';
+      }
+    }
+
+    async function login() {
+      const username = $('loginUser').value.trim();
+      const password = $('loginPass').value;
+      if (!username || !password) { toast('Enter username and password', true); return; }
+      $('loginBtn').disabled = true;
+      try {
+        const body = new URLSearchParams({
+          grant_type: 'password', client_id: 'banking-web', username, password
+        });
+        const res = await fetch(state.keycloakTokenUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.error_description || 'Login failed (' + res.status + ')');
+        }
+        const data = await res.json();
+        const claims = decodeJwt(data.access_token);
+        state.token = data.access_token;
+        state.user = claims.preferred_username || username;
+        state.roles = (claims.realm_access && claims.realm_access.roles) || [];
+        sessionStorage.setItem('ops_token', state.token);
+        sessionStorage.setItem('ops_user', state.user);
+        sessionStorage.setItem('ops_roles', JSON.stringify(state.roles));
+        $('loginPass').value = '';
+        renderAuth();
+        toast('Signed in as ' + state.user);
+        await refreshAll();
+      } catch (e) {
+        toast(e.message, true);
+      } finally {
+        $('loginBtn').disabled = false;
+      }
+    }
+
+    // ---------- meta ----------
+    async function loadMeta() {
+      const data = await api('/api/agent/health-summary');
+      state.securityEnabled = !!data.securityEnabled;
+      state.keycloakTokenUrl = data.keycloakTokenUrl;
+      $('meta').innerHTML = `
+        <span><strong>Platform</strong> ${escapeHtml(data.platform)}</span>
+        <span><strong>Engine</strong> ${escapeHtml(data.engine)}</span>
+        <span><strong>LLM</strong> ${data.llmEnabled ? 'enabled' : 'heuristic fallback'}</span>
+        <span><strong>Mitigation</strong> ${escapeHtml(data.mitigationMode)}</span>
+        <span><strong>Security</strong> ${data.securityEnabled ? 'Keycloak (ADMIN/SUPPORT)' : 'open (demo)'}</span>
+        <span><strong>Open</strong> ${data.openIncidents}</span>
+      `;
+      renderAuth();
+    }
+
+    // ---------- incidents ----------
     async function loadIncidents() {
-      const res = await fetch('/api/agent/incidents');
-      const data = await res.json();
-      if (!data.length) {
-        incidentsEl.innerHTML = '<div class="empty">No incidents yet.</div>';
+      let data;
+      try { data = await api('/api/agent/incidents'); }
+      catch (e) {
+        $('incidents').innerHTML = '<div class="empty">' + escapeHtml(e.message) + '</div>';
         return;
       }
-      incidentsEl.innerHTML = data.map(i => `
-        <div class="incident" data-id="${i.id}">
+      if (!data.length) { $('incidents').innerHTML = '<div class="empty">No incidents yet.</div>'; return; }
+      $('incidents').innerHTML = data.map(i => `
+        <div class="incident ${state.selectedIncident === i.id ? 'selected' : ''}" data-id="${i.id}">
           <div class="incident-title">${escapeHtml(i.title || 'Untitled')}</div>
           <div>
+            <span class="badge ${i.priority}">${i.priority}</span>
             <span class="badge ${i.severity}">${i.severity}</span>
             <span class="badge ${i.status}">${i.status}</span>
             <span class="muted">${escapeHtml(i.affectedService || 'unknown service')}</span>
           </div>
-          <div class="muted">${escapeHtml(i.summary || '')}</div>
+          <div class="muted">Occurred ${fmtTime(i.occurredAt)} · ${escapeHtml((i.summary || '').slice(0, 140))}</div>
         </div>
       `).join('');
+      document.querySelectorAll('#incidents .incident').forEach(el => {
+        el.addEventListener('click', () => selectIncident(el.getAttribute('data-id')));
+      });
+    }
 
-      incidentsEl.querySelectorAll('.incident').forEach(el => {
-        el.addEventListener('click', async () => {
-          const id = el.getAttribute('data-id');
-          const res = await fetch('/api/agent/incidents/' + id + '/report');
-          const report = await res.json();
-          replyEl.textContent = report.markdown || report.executiveSummary || 'No report yet.';
+    async function selectIncident(id) {
+      state.selectedIncident = id;
+      try {
+        const incident = await api('/api/agent/incidents/' + id);
+        renderDetail(incident);
+        await loadIncidents();
+      } catch (e) {
+        toast(e.message, true);
+      }
+    }
+
+    function renderDetail(i) {
+      $('detailPanel').hidden = false;
+      $('dTitle').textContent = i.title || 'Untitled';
+      $('dBadges').innerHTML = `
+        <span class="badge ${i.priority}">${i.priority}</span>
+        <span class="badge ${i.severity}">${i.severity}</span>
+        <span class="badge ${i.status}">${i.status}</span>`;
+      $('dOccurred').textContent = fmtTime(i.occurredAt);
+      $('dCreated').textContent = fmtTime(i.createdAt);
+      $('dUpdated').textContent = fmtTime(i.updatedAt);
+      $('dResolved').textContent = fmtTime(i.resolvedAt);
+      $('dService').textContent = i.affectedService || '—';
+      $('dSource').textContent = i.source || '—';
+      $('dRootCause').textContent = i.rootCauseHypothesis || '—';
+      $('dResolvedBy').textContent = i.resolvedBy || '—';
+      $('statusSelect').value = i.status;
+      $('resolutionNotes').value = i.resolutionNotes || '';
+      $('dReport').textContent = i.reportMarkdown || 'No report yet.';
+
+      const mitigations = i.mitigations || [];
+      $('dMitigations').innerHTML = mitigations.length ? mitigations.map(m => `
+        <div class="mitigation">
+          <span class="badge">${m.status}</span> ${escapeHtml(m.description)}
+          ${m.result ? '<div class="muted">' + escapeHtml(m.result) + '</div>' : ''}
+          ${m.status === 'PROPOSED' ? '<div class="row"><button class="secondary approve-btn" data-action="' + m.id + '">Approve &amp; execute</button></div>' : ''}
+        </div>
+      `).join('') : '<div class="empty">None proposed.</div>';
+      document.querySelectorAll('#dMitigations .approve-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          btn.disabled = true;
+          try {
+            await api(`/api/agent/incidents/${i.id}/mitigations/${btn.getAttribute('data-action')}/approve`, { method: 'POST' });
+            toast('Mitigation approved and executed');
+            await selectIncident(i.id);
+          } catch (e) { toast(e.message, true); btn.disabled = false; }
+        });
+      });
+
+      const audit = i.auditTrail || [];
+      $('dAudit').innerHTML = audit.length ? audit.slice().reverse().map(a => `
+        <div><strong>${escapeHtml(a.action)}</strong> by ${escapeHtml(a.actor || 'system')} · ${fmtTime(a.timestamp)}
+        <div class="muted">${escapeHtml(a.detail || '')}</div></div>
+      `).join('') : '<div class="empty">No audit entries yet.</div>';
+    }
+
+    async function incidentAction(path, body, successMessage) {
+      if (!state.selectedIncident) { toast('Select an incident first', true); return; }
+      try {
+        await api(`/api/agent/incidents/${state.selectedIncident}/${path}`, {
+          method: 'POST', body: JSON.stringify(body || {})
+        });
+        toast(successMessage);
+        await selectIncident(state.selectedIncident);
+        await loadMeta();
+      } catch (e) {
+        toast(e.message, true);
+      }
+    }
+
+    // ---------- restart ----------
+    async function loadRestart() {
+      try {
+        const services = await api('/api/agent/restartable-services');
+        const select = $('restartService');
+        const current = select.value;
+        select.innerHTML = services.map(s => `<option>${escapeHtml(s)}</option>`).join('');
+        if (services.includes(current)) select.value = current;
+      } catch (e) { /* list stays as-is when unauthorized */ }
+
+      let requests;
+      try { requests = await api('/api/agent/restart-requests'); }
+      catch (e) { $('restartList').innerHTML = '<div class="empty">' + escapeHtml(e.message) + '</div>'; return; }
+      if (!requests.length) { $('restartList').innerHTML = '<div class="empty">No restart requests.</div>'; return; }
+      $('restartList').className = '';
+      $('restartList').innerHTML = requests.map(r => `
+        <div class="mitigation">
+          <span class="badge ${r.status}">${r.status.replaceAll('_', ' ')}</span>
+          <strong>${escapeHtml(r.service)}</strong>
+          <div class="muted">Reason: ${escapeHtml(r.reason || '—')}</div>
+          <div class="muted">Requested by ${escapeHtml(r.requestedBy || '—')} · ${fmtTime(r.requestedAt)}</div>
+          ${r.decidedBy ? '<div class="muted">Decided by ' + escapeHtml(r.decidedBy) + ' · ' + fmtTime(r.decidedAt) + '</div>' : ''}
+          ${r.note ? '<div class="muted">' + escapeHtml(r.note) + '</div>' : ''}
+          ${r.status === 'PENDING_CONFIRMATION' ? `
+            <div class="row">
+              <button class="danger confirm-restart" data-id="${r.id}" data-service="${escapeHtml(r.service)}">Confirm (ADMIN)</button>
+              <button class="secondary cancel-restart" data-id="${r.id}">Cancel</button>
+            </div>` : ''}
+        </div>
+      `).join('');
+      document.querySelectorAll('.confirm-restart').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const service = btn.getAttribute('data-service');
+          const typed = prompt(`This records and broadcasts an emergency restart of "${service}".\nType the service name to confirm:`);
+          if (typed !== service) { if (typed !== null) toast('Confirmation text did not match', true); return; }
+          btn.disabled = true;
+          try {
+            await api(`/api/agent/restart-requests/${btn.getAttribute('data-id')}/confirm`, { method: 'POST' });
+            toast('Restart confirmed, recorded, and ops team notified');
+            await loadRestart();
+          } catch (e) { toast(e.message, true); btn.disabled = false; }
+        });
+      });
+      document.querySelectorAll('.cancel-restart').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          btn.disabled = true;
+          try {
+            await api(`/api/agent/restart-requests/${btn.getAttribute('data-id')}/cancel`, {
+              method: 'POST', body: JSON.stringify({ note: 'Cancelled from console' })
+            });
+            toast('Restart request cancelled');
+            await loadRestart();
+          } catch (e) { toast(e.message, true); btn.disabled = false; }
         });
       });
     }
 
-    askBtn.addEventListener('click', async () => {
-      const message = promptEl.value.trim();
+    // ---------- events ----------
+    $('loginBtn').addEventListener('click', login);
+    $('loginPass').addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
+    $('logoutBtn').addEventListener('click', () => { clearAuth(); toast('Signed out'); });
+
+    $('askBtn').addEventListener('click', async () => {
+      const message = $('prompt').value.trim();
       if (!message) return;
-      askBtn.disabled = true;
-      replyEl.textContent = 'Investigating… gathering health, metrics, logs, and traces.';
+      $('askBtn').disabled = true;
+      $('reply').textContent = 'Investigating… gathering health, metrics, logs, and traces.';
       try {
-        const res = await fetch('/api/agent/chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message })
-        });
-        const data = await res.json();
-        replyEl.textContent = data.reply || 'Investigation complete.';
-        await loadIncidents();
-        await loadMeta();
+        const data = await api('/api/agent/chat', { method: 'POST', body: JSON.stringify({ message }) });
+        $('reply').textContent = data.reply || 'Investigation complete.';
+        await refreshAll();
       } catch (e) {
-        replyEl.textContent = 'Investigation failed: ' + e.message;
+        $('reply').textContent = 'Investigation failed: ' + e.message;
       } finally {
-        askBtn.disabled = false;
+        $('askBtn').disabled = false;
       }
     });
 
-    refreshBtn.addEventListener('click', async () => {
-      await loadIncidents();
-      await loadMeta();
+    $('refreshBtn').addEventListener('click', refreshAll);
+    $('statusBtn').addEventListener('click', () =>
+      incidentAction('status', { status: $('statusSelect').value }, 'Status updated'));
+    $('prioUpBtn').addEventListener('click', () =>
+      incidentAction('priority', { direction: 'upgrade' }, 'Priority upgraded'));
+    $('prioDownBtn').addEventListener('click', () =>
+      incidentAction('priority', { direction: 'downgrade' }, 'Priority downgraded'));
+    $('saveNotesBtn').addEventListener('click', () =>
+      incidentAction('resolution', { notes: $('resolutionNotes').value, markResolved: false }, 'Notes saved'));
+    $('resolveBtn').addEventListener('click', () =>
+      incidentAction('resolution', { notes: $('resolutionNotes').value, markResolved: true }, 'Resolved with notes'));
+    $('notifyBtn').addEventListener('click', async () => {
+      if (!state.selectedIncident) { toast('Select an incident first', true); return; }
+      $('notifyBtn').disabled = true;
+      try {
+        const out = await api(`/api/agent/incidents/${state.selectedIncident}/notify`, {
+          method: 'POST', body: JSON.stringify({ message: $('notifyMessage').value })
+        });
+        if (out.delivered) {
+          const email = out.email || {};
+          toast('Team notified — email mode: ' + (email.mode || 'unknown') + (email.detail ? '\n' + email.detail : ''));
+        } else {
+          toast(out.error || 'Notification failed', true);
+        }
+        $('notifyMessage').value = '';
+        await selectIncident(state.selectedIncident);
+      } catch (e) { toast(e.message, true); }
+      finally { $('notifyBtn').disabled = false; }
     });
 
-    function escapeHtml(s) {
-      return String(s)
-        .replaceAll('&', '&amp;')
-        .replaceAll('<', '&lt;')
-        .replaceAll('>', '&gt;')
-        .replaceAll('"', '&quot;');
+    $('restartRequestBtn').addEventListener('click', async () => {
+      const service = $('restartService').value;
+      const reason = $('restartReason').value.trim();
+      if (!service) { toast('Pick a service', true); return; }
+      if (!reason) { toast('A reason is required for an emergency restart', true); return; }
+      $('restartRequestBtn').disabled = true;
+      try {
+        await api('/api/agent/restart-requests', {
+          method: 'POST',
+          body: JSON.stringify({ service, reason, incidentId: state.selectedIncident })
+        });
+        toast('Restart requested — awaiting ADMIN confirmation');
+        $('restartReason').value = '';
+        await loadRestart();
+      } catch (e) { toast(e.message, true); }
+      finally { $('restartRequestBtn').disabled = false; }
+    });
+
+    async function refreshAll() {
+      await Promise.allSettled([loadMeta(), loadIncidents(), loadRestart()]);
+      if (state.selectedIncident) {
+        try { renderDetail(await api('/api/agent/incidents/' + state.selectedIncident)); } catch (e) {}
+      }
     }
 
-    loadMeta();
-    loadIncidents();
-    setInterval(() => { loadIncidents(); loadMeta(); }, 15000);
+    loadMeta().then(() => { loadIncidents(); loadRestart(); });
+    setInterval(refreshAll, 20000);
   </script>
 </body>
 </html>

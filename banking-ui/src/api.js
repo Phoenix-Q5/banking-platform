@@ -65,9 +65,17 @@ async function request(path, { method = 'GET', token, body } = {}) {
 export const publicApi = {
   // No token required — open endpoints
   registerCustomer: (payload) =>
-    request('/api/customers', { method: 'POST', body: payload }),
+    request('/api/customers/register', { method: 'POST', body: payload }),
   listCardOffers: () =>
     request('/api/cards/offers'),
+}
+
+export function forgotPasswordUrl() {
+  return `${KEYCLOAK_BASE}/realms/${REALM}/login-actions/reset-credentials?client_id=${CLIENT_ID}`
+}
+
+export function accountConsoleUrl() {
+  return `${KEYCLOAK_BASE}/realms/${REALM}/account`
 }
 
 export const api = {
@@ -92,6 +100,8 @@ export const api = {
   createAccount: (token, customerId, currency = 'USD') =>
     request(`/api/accounts`, { method: 'POST', token, body: { customerId, currency } }),
   getAccount: (token, id) => request(`/api/accounts/${id}`, { token }),
+  deposit: (token, id, payload) =>
+    request(`/api/accounts/${id}/deposit`, { method: 'POST', token, body: payload }),
 
   // transactions
   listTransactions: (token, accountId) =>
@@ -116,10 +126,13 @@ export const api = {
     request(`/api/cards`, { method: 'POST', token, body: payload }),
   freezeCard: (token, id) => request(`/api/cards/${id}/freeze`, { method: 'POST', token }),
   unfreezeCard: (token, id) => request(`/api/cards/${id}/unfreeze`, { method: 'POST', token }),
+  updateCardLimits: (token, id, payload) =>
+    request(`/api/cards/${id}/limits`, { method: 'PUT', token, body: payload }),
 
   // loans
   listLoans: (token, customerId) =>
     request(`/api/loans?customerId=${customerId}`, { token }),
+  getLoan: (token, id) => request(`/api/loans/${id}`, { token }),
   listAllLoans: (token, status) =>
     request(`/api/loans${status ? `?status=${status}` : ''}`, { token }),
   applyLoan: (token, payload) =>

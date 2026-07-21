@@ -68,6 +68,8 @@ public class AgentController {
         out.put("engine", reasoningEngineRouter.name());
         out.put("llmEnabled", properties.getLlm().isEnabled());
         out.put("mitigationMode", properties.getMitigationMode());
+        out.put("securityEnabled", properties.getSecurity().isEnabled());
+        out.put("keycloakTokenUrl", properties.getSecurity().getKeycloakTokenUrl());
         out.put("services", properties.getServices().keySet());
         out.put("tools", toolRegistry.catalog());
         out.put("openIncidents", incidentStore.list().stream()
@@ -91,6 +93,13 @@ public class AgentController {
         incident.setAffectedService(request.getService());
         incident.setCategory(request.getCategory() == null ? "manual" : request.getCategory());
         incident.setSeverity(parseSeverity(request.getSeverity()));
+        if (request.getOccurredAt() != null && !request.getOccurredAt().isBlank()) {
+            try {
+                incident.setOccurredAt(java.time.OffsetDateTime.parse(request.getOccurredAt()).toInstant());
+            } catch (java.time.format.DateTimeParseException ex) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "occurredAt must be ISO-8601, e.g. 2026-07-21T14:00:00Z");
+            }
+        }
         if (request.getContext() != null) {
             incident.getEvidence().put("context", request.getContext());
         }
@@ -122,11 +131,14 @@ public class AgentController {
     }
 
     @PostMapping("/incidents/{id}/mitigations/{actionId}/approve")
-    public MitigationAction approve(@PathVariable("id") String id, @PathVariable("actionId") String actionId) {
+    public MitigationAction approve(@PathVariable("id") String id, @PathVariable("actionId") String actionId,
+                                    org.springframework.security.core.Authentication authentication) {
         Incident incident = incidentStore.findById(id)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Incident not found"));
         try {
             MitigationAction action = mitigationService.approveAndExecute(incident, actionId);
+            String actor = authentication == null ? "console" : authentication.getName();
+            incident.audit(actor, "MITIGATION_APPROVED", action.getDescription());
             incidentStore.save(incident);
             opsAgentMetrics.recordMitigationApproved(action.getPlaybook());
             opsAgentMetrics.recordMitigationExecuted(action.getPlaybook(),

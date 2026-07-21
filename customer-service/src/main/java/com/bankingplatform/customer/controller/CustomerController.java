@@ -4,6 +4,7 @@ import com.bankingplatform.customer.dto.CustomerDtos.*;
 import com.bankingplatform.customer.exception.NotFoundException;
 import com.bankingplatform.customer.model.Customer;
 import com.bankingplatform.customer.repository.CustomerRepository;
+import com.bankingplatform.customer.service.CustomerRegistrationService;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,9 +21,17 @@ public class CustomerController {
 
     private static final Logger log = LoggerFactory.getLogger(CustomerController.class);
     private final CustomerRepository repository;
+    private final CustomerRegistrationService registrationService;
 
-    public CustomerController(CustomerRepository repository) {
+    public CustomerController(CustomerRepository repository, CustomerRegistrationService registrationService) {
         this.repository = repository;
+        this.registrationService = registrationService;
+    }
+
+    @PostMapping("/register")
+    @ResponseStatus(HttpStatus.CREATED)
+    public CustomerResponse register(@Valid @RequestBody RegisterCustomerRequest request) {
+        return registrationService.register(request);
     }
 
     @PostMapping

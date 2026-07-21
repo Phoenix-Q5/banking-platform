@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useEffect, useMemo, useState } from 'react'
+import { useParams, useNavigate, Link } from 'react-router-dom'
 import { api } from '../api'
 import { useAuth } from '../auth'
 
@@ -7,12 +7,23 @@ function money(amount, currency = 'USD') {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(Number(amount || 0))
 }
 
+function txColor(tx, accountId) {
+  return tx.toAccountId === accountId ? 'var(--ok)' : 'var(--danger)'
+}
+
 function txSign(tx, accountId) {
   return tx.toAccountId === accountId ? '+' : '-'
 }
 
-function txColor(tx, accountId) {
-  return tx.toAccountId === accountId ? 'var(--ok)' : 'var(--danger)'
+function toCsv(rows) {
+  const header = ['date', 'direction', 'counterpart', 'amount', 'currency', 'status', 'id']
+  const lines = [header.join(',')]
+  for (const r of rows) {
+    lines.push([
+      r.date, r.direction, r.counterpart, r.amount, r.currency, r.status, r.id,
+    ].map((v) => `"${String(v ?? '').replace(/"/g, '""')}"`).join(','))
+  }
+  return lines.join('\n')
 }
 
 export default function AccountDetailPage() {
@@ -25,6 +36,7 @@ export default function AccountDetailPage() {
   const [transactions, setTransactions] = useState([])
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+  const [filter, setFilter] = useState({ direction: 'ALL', from: '', to: '' })
 
   const load = async () => {
     setError('')
@@ -42,7 +54,48 @@ export default function AccountDetailPage() {
 
   useEffect(() => { load() }, [id])
 
+  const filtered = useMemo(() => {
+    return transactions.filter((t) => {
+      const isInbound = t.toAccountId === id
+      if (filter.direction === 'IN' && !isInbound) return false
+      if (filter.direction === 'OUT' && isInbound) return false
+      const when = new Date(t.createdAt).getTime()
+      if (filter.from) {
+        const from = new Date(filter.from).getTime()
+        if (when < from) return false
+      }
+      if (filter.to) {
+        const to = new Date(filter.to)
+        to.setHours(23, 59, 59, 999)
+        if (when > to.getTime()) return false
+      }
+      return true
+    })
+  }, [transactions, filter, id])
+
   const copyId = () => navigator.clipboard.writeText(id)
+
+  const exportStatement = () => {
+    const rows = filtered.map((t) => {
+      const isInbound = t.toAccountId === id
+      return {
+        date: new Date(t.createdAt).toISOString(),
+        direction: isInbound ? 'IN' : 'OUT',
+        counterpart: isInbound ? t.fromAccountId : t.toAccountId,
+        amount: t.amount,
+        currency: t.currency,
+        status: t.status,
+        id: t.id,
+      }
+    })
+    const blob = new Blob([toCsv(rows)], { type: 'text/csv;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `harbor-${account?.accountNumber || id}-statement.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
 
   const statusAction = async (action) => {
     setBusy(true)
@@ -81,21 +134,23 @@ export default function AccountDetailPage() {
     )
   }
 
-  const incoming = transactions.filter((t) => t.toAccountId === id).reduce((s, t) => s + Number(t.amount), 0)
-  const outgoing = transactions.filter((t) => t.fromAccountId === id).reduce((s, t) => s + Number(t.amount), 0)
+  const incoming = filtered.filter((t) => t.toAccountId === id).reduce((s, t) => s + Number(t.amount), 0)
+  const outgoing = filtered.filter((t) => t.fromAccountId === id).reduce((s, t) => s + Number(t.amount), 0)
 
   return (
     <div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
         <button className="secondary" style={{ padding: '6px 12px', fontSize: '0.88rem' }} onClick={() => navigate(-1)}>← Back</button>
         <h1 className="page-title" style={{ margin: 0 }}>{account.accountNumber}</h1>
         <span className={`badge ${account.status}`}>{account.status}</span>
+        <Link to="/funds" className="secondary" style={{ marginLeft: 'auto', padding: '6px 12px', fontSize: '0.88rem' }}>
+          Deposit / transfer
+        </Link>
       </div>
 
       {error && <div className="error" style={{ marginBottom: 14 }}>{error}</div>}
 
       <div className="grid two" style={{ marginBottom: 16 }}>
-        {/* Balance card */}
         <section className="panel">
           <h2>Balance</h2>
           <div className="stat">
@@ -104,17 +159,16 @@ export default function AccountDetailPage() {
           </div>
           <div className="grid two" style={{ marginTop: 12, gap: 0 }}>
             <div className="stat">
-              <div className="label">↓ Total received</div>
+              <div className="label">↓ In (filtered)</div>
               <div style={{ color: 'var(--ok)', fontWeight: 600, marginTop: 4 }}>{money(incoming, account.currency)}</div>
             </div>
             <div className="stat">
-              <div className="label">↑ Total sent</div>
+              <div className="label">↑ Out (filtered)</div>
               <div style={{ color: 'var(--danger)', fontWeight: 600, marginTop: 4 }}>{money(outgoing, account.currency)}</div>
             </div>
           </div>
         </section>
 
-        {/* Account info */}
         <section className="panel">
           <h2>Account details</h2>
           <div className="detail-row">
@@ -166,14 +220,41 @@ export default function AccountDetailPage() {
         </section>
       </div>
 
-      {/* Transaction history */}
       <section className="panel">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-          <h2 style={{ margin: 0 }}>Transaction history</h2>
-          <span className="muted" style={{ fontSize: '0.85rem' }}>{transactions.length} transaction{transactions.length !== 1 ? 's' : ''}</span>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, gap: 12, flexWrap: 'wrap' }}>
+          <h2 style={{ margin: 0 }}>Statement</h2>
+          <div className="actions" style={{ margin: 0 }}>
+            <button className="secondary" onClick={exportStatement} disabled={filtered.length === 0}>
+              Export CSV
+            </button>
+          </div>
         </div>
-        {transactions.length === 0 ? (
-          <div className="empty">No transactions on this account yet.</div>
+
+        <div className="grid three" style={{ gap: 12, marginBottom: 14 }}>
+          <label>
+            Direction
+            <select value={filter.direction} onChange={(e) => setFilter({ ...filter, direction: e.target.value })}>
+              <option value="ALL">All</option>
+              <option value="IN">Received</option>
+              <option value="OUT">Sent</option>
+            </select>
+          </label>
+          <label>
+            From date
+            <input type="date" value={filter.from} onChange={(e) => setFilter({ ...filter, from: e.target.value })} />
+          </label>
+          <label>
+            To date
+            <input type="date" value={filter.to} onChange={(e) => setFilter({ ...filter, to: e.target.value })} />
+          </label>
+        </div>
+
+        <div className="muted" style={{ fontSize: '0.85rem', marginBottom: 10 }}>
+          {filtered.length} transaction{filtered.length !== 1 ? 's' : ''}
+        </div>
+
+        {filtered.length === 0 ? (
+          <div className="empty">No transactions match this filter.</div>
         ) : (
           <table className="table">
             <thead>
@@ -186,7 +267,7 @@ export default function AccountDetailPage() {
               </tr>
             </thead>
             <tbody>
-              {transactions.map((t) => {
+              {filtered.map((t) => {
                 const isInbound = t.toAccountId === id
                 return (
                   <tr key={t.id}>

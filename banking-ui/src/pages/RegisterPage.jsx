@@ -1,11 +1,13 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { publicApi } from '../api'
+import { useAuth } from '../auth'
 
-const STEPS = ['Personal info', 'Address', 'Done']
+const STEPS = ['Personal info', 'Credentials', 'Address', 'Done']
 
 const EMPTY = {
   firstName: '', lastName: '', email: '', phone: '', dateOfBirth: '',
+  username: '', password: '', confirmPassword: '',
   addressLine1: '', addressLine2: '', city: '', state: '', postalCode: '', country: 'US',
 }
 
@@ -26,6 +28,8 @@ function StepBar({ current }) {
 }
 
 export default function RegisterPage() {
+  const { login } = useAuth()
+  const navigate = useNavigate()
   const [step, setStep] = useState(0)
   const [form, setForm] = useState(EMPTY)
   const [busy, setBusy] = useState(false)
@@ -34,10 +38,28 @@ export default function RegisterPage() {
 
   const set = (field) => (e) => setForm((f) => ({ ...f, [field]: e.target.value }))
 
-  const nextStep = (e) => {
+  const nextFromPersonal = (e) => {
     e.preventDefault()
     setError('')
-    setStep((s) => s + 1)
+    setStep(1)
+  }
+
+  const nextFromCredentials = (e) => {
+    e.preventDefault()
+    setError('')
+    if (form.password !== form.confirmPassword) {
+      setError('Passwords do not match')
+      return
+    }
+    if (form.password.length < 8) {
+      setError('Password must be at least 8 characters')
+      return
+    }
+    if (!/^[a-zA-Z0-9._-]{3,64}$/.test(form.username.trim())) {
+      setError('Username must be 3–64 characters (letters, numbers, . _ -)')
+      return
+    }
+    setStep(2)
   }
 
   const submit = async (e) => {
@@ -45,11 +67,31 @@ export default function RegisterPage() {
     setBusy(true)
     setError('')
     try {
-      const payload = { ...form }
+      const payload = {
+        username: form.username.trim().toLowerCase(),
+        password: form.password,
+        firstName: form.firstName,
+        lastName: form.lastName,
+        email: form.email,
+        phone: form.phone || undefined,
+        dateOfBirth: form.dateOfBirth || undefined,
+        addressLine1: form.addressLine1 || undefined,
+        addressLine2: form.addressLine2 || undefined,
+        city: form.city || undefined,
+        state: form.state || undefined,
+        postalCode: form.postalCode || undefined,
+        country: form.country || undefined,
+      }
       Object.keys(payload).forEach((k) => { if (payload[k] === '') delete payload[k] })
       const customer = await publicApi.registerCustomer(payload)
       setCreated(customer)
-      setStep(2)
+      setStep(3)
+      try {
+        await login(payload.username, form.password)
+        setTimeout(() => navigate('/'), 800)
+      } catch {
+        /* profile created; user can sign in manually */
+      }
     } catch (err) {
       setError(err.message || 'Registration failed. Please try again.')
     } finally {
@@ -59,7 +101,6 @@ export default function RegisterPage() {
 
   return (
     <div className="app-shell">
-      {/* Minimal public header */}
       <header className="topbar">
         <Link to="/" className="brand">Harbor <span>Bank</span></Link>
         <nav className="nav">
@@ -70,13 +111,12 @@ export default function RegisterPage() {
 
       <div style={{ maxWidth: 640, margin: '0 auto' }}>
         <h1 className="page-title">Open your account</h1>
-        <p className="page-sub">Join Harbor Bank in minutes — no paperwork, no branch visit.</p>
+        <p className="page-sub">Create your Harbor Bank username and profile — then start banking.</p>
 
         <StepBar current={step} />
 
-        {/* ── Step 0: Personal information ── */}
         {step === 0 && (
-          <form className="form" onSubmit={nextStep}>
+          <form className="form" onSubmit={nextFromPersonal}>
             <section className="panel">
               <h2>Personal information</h2>
               <div className="grid two" style={{ gap: 12 }}>
@@ -102,20 +142,67 @@ export default function RegisterPage() {
                 <input type="date" value={form.dateOfBirth} onChange={set('dateOfBirth')} />
               </label>
             </section>
-
             {error && <div className="error">{error}</div>}
-
             <div className="actions">
               <button className="primary" type="submit">Continue →</button>
-              <Link to="/" style={{ alignSelf: 'center', color: 'var(--muted)', fontSize: '0.9rem' }}>
+              <Link to="/login" style={{ alignSelf: 'center', color: 'var(--muted)', fontSize: '0.9rem' }}>
                 Already have an account? Sign in
               </Link>
             </div>
           </form>
         )}
 
-        {/* ── Step 1: Address ── */}
         {step === 1 && (
+          <form className="form" onSubmit={nextFromCredentials}>
+            <section className="panel">
+              <h2>Choose your login</h2>
+              <p className="muted" style={{ marginTop: 0, marginBottom: 14, fontSize: '0.9rem' }}>
+                This username and password are how you sign in to Harbor Bank.
+              </p>
+              <label>
+                Username <span className="req">*</span>
+                <input
+                  required
+                  autoComplete="username"
+                  value={form.username}
+                  onChange={set('username')}
+                  placeholder="jane.smith"
+                  pattern="[a-zA-Z0-9._\-]{3,64}"
+                />
+              </label>
+              <label style={{ marginTop: 12 }}>
+                Password <span className="req">*</span>
+                <input
+                  required
+                  type="password"
+                  autoComplete="new-password"
+                  minLength={8}
+                  value={form.password}
+                  onChange={set('password')}
+                  placeholder="At least 8 characters"
+                />
+              </label>
+              <label style={{ marginTop: 12 }}>
+                Confirm password <span className="req">*</span>
+                <input
+                  required
+                  type="password"
+                  autoComplete="new-password"
+                  minLength={8}
+                  value={form.confirmPassword}
+                  onChange={set('confirmPassword')}
+                />
+              </label>
+            </section>
+            {error && <div className="error">{error}</div>}
+            <div className="actions">
+              <button className="primary" type="submit">Continue →</button>
+              <button type="button" className="secondary" onClick={() => { setStep(0); setError('') }}>← Back</button>
+            </div>
+          </form>
+        )}
+
+        {step === 2 && (
           <form className="form" onSubmit={submit}>
             <section className="panel">
               <h2>Your address</h2>
@@ -148,39 +235,28 @@ export default function RegisterPage() {
                 </label>
               </div>
             </section>
-
             {error && <div className="error">{error}</div>}
-
             <div className="actions">
               <button className="primary" type="submit" disabled={busy}>
                 {busy ? 'Creating account…' : 'Create my account'}
               </button>
-              <button type="button" className="secondary" onClick={() => { setStep(0); setError('') }}>
-                ← Back
-              </button>
+              <button type="button" className="secondary" onClick={() => { setStep(1); setError('') }}>← Back</button>
             </div>
           </form>
         )}
 
-        {/* ── Step 2: Success ── */}
-        {step === 2 && created && (
+        {step === 3 && created && (
           <section className="panel" style={{ textAlign: 'center', padding: '36px 28px' }}>
             <div className="open-success-icon">✓</div>
             <div className="open-success-title">Welcome, {created.firstName}!</div>
             <p style={{ color: 'var(--muted)', marginTop: 10, lineHeight: 1.6 }}>
-              Your Harbor Bank profile has been created. Sign in to open your first account,
-              explore card offers, and start banking.
+              Your login <strong>@{created.externalUserId || form.username}</strong> is ready.
+              Signing you in…
             </p>
-            <div style={{
-              background: 'var(--sand)', borderRadius: 4, padding: '10px 14px',
-              margin: '18px auto', maxWidth: 320, fontSize: '0.88rem', color: 'var(--muted)',
-            }}>
-              Customer ID: <code style={{ color: 'var(--sea-deep)', fontSize: '0.85rem' }}>{created.id}</code>
-            </div>
             <div className="actions" style={{ justifyContent: 'center', marginTop: 20 }}>
-              <Link to="/login" className="btn">Sign in to your account →</Link>
-              <Link to="/card-offers" style={{ alignSelf: 'center', color: 'var(--sea)', fontSize: '0.92rem' }}>
-                Browse card offers
+              <Link to="/" className="btn">Go to Overview →</Link>
+              <Link to="/login" style={{ alignSelf: 'center', color: 'var(--sea)', fontSize: '0.92rem' }}>
+                Sign in manually
               </Link>
             </div>
           </section>

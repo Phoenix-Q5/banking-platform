@@ -37,6 +37,35 @@ services:
       - "8180:8080"
     volumes:
       - ./infra/keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/8080"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+    networks: [banking-net]
+
+  keycloak-smtp-init:
+    image: curlimages/curl:8.10.1
+    environment:
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-noreply@harborbank.local}
+      SMTP_STARTTLS: ${SMTP_STARTTLS:-true}
+      SMTP_SSL: ${SMTP_SSL:-false}
+      SMTP_AUTH: ${SMTP_AUTH:-true}
+    volumes:
+      - ./infra/keycloak/apply-smtp.sh:/apply-smtp.sh:ro
+    entrypoint: ["/bin/sh", "/apply-smtp.sh"]
+    depends_on:
+      keycloak:
+        condition: service_started
+    restart: "no"
     networks: [banking-net]
 
   kafka:
@@ -129,6 +158,10 @@ services:
       DB_PASSWORD: banking
       KEYCLOAK_ISSUER_URI: http://localhost:8180/realms/banking
       KEYCLOAK_JWK_URI: http://keycloak:8080/realms/banking/protocol/openid-connect/certs
+      KEYCLOAK_SERVER_URL: http://keycloak:8080
+      KEYCLOAK_REALM: banking
+      KEYCLOAK_ADMIN_USERNAME: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318/v1/traces
       SPRING_PROFILES_ACTIVE: json-logs
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
@@ -217,6 +250,15 @@ services:
       PUSH_ENABLED: "true"
       NOTIFY_DEFAULT_CHANNELS: IN_APP,PUSH
       KAFKA_CONSUMER_GROUP: notification-service
+      EMAIL_ENABLED: ${EMAIL_ENABLED:-true}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-noreply@harborbank.local}
+      SMTP_STARTTLS: ${SMTP_STARTTLS:-true}
+      SMTP_AUTH: ${SMTP_AUTH:-true}
+      OPS_EMAIL_RECIPIENTS: ${OPS_EMAIL_RECIPIENTS:-}
     ports:
       - "8087:8087"
     depends_on:
@@ -333,15 +375,32 @@ services:
       LLM_BASE_URL: ${LLM_BASE_URL:-https://api.openai.com/v1}
       LLM_API_KEY: ${LLM_API_KEY:-}
       LLM_MODEL: ${LLM_MODEL:-gpt-4o-mini}
+      OPS_SECURITY_ENABLED: ${OPS_SECURITY_ENABLED:-true}
+      OPS_KEYCLOAK_TOKEN_URL: ${OPS_KEYCLOAK_TOKEN_URL:-http://localhost:8180/realms/banking/protocol/openid-connect/token}
+      KEYCLOAK_ISSUER_URI: http://localhost:8180/realms/banking
+      KEYCLOAK_JWK_URI: http://keycloak:8080/realms/banking/protocol/openid-connect/certs
+      OPS_PERSISTENCE_ENABLED: "true"
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/opsagentdb
+      SPRING_DATASOURCE_USERNAME: banking
+      SPRING_DATASOURCE_PASSWORD: banking
       SPRING_PROFILES_ACTIVE: json-logs
     ports:
       - "8085:8085"
     depends_on:
-      - prometheus
-      - loki
-      - tempo
-      - api-gateway
-      - notification-service
+      prometheus:
+        condition: service_started
+      loki:
+        condition: service_started
+      tempo:
+        condition: service_started
+      api-gateway:
+        condition: service_started
+      notification-service:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
     networks: [banking-net]
 
   db-seed:

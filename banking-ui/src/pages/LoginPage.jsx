@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { forgotPasswordUrl } from '../api'
 import { useAuth } from '../auth'
 
 export default function LoginPage() {
@@ -64,14 +65,22 @@ export default function LoginPage() {
                 Password
                 <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" />
               </label>
+              <div style={{ textAlign: 'right', marginTop: -4, marginBottom: 4 }}>
+                <a
+                  href={forgotPasswordUrl()}
+                  style={{ color: 'var(--sea)', fontSize: '0.85rem', textDecoration: 'underline', textUnderlineOffset: 2 }}
+                >
+                  Forgot password?
+                </a>
+              </div>
               <div className="actions">
                 <button className="primary" disabled={busy}>{busy ? 'Signing in…' : 'Sign in'}</button>
+                <button type="button" className="secondary" onClick={() => { setUsername('demo.customer'); setPassword('password') }}>Use customer</button>
                 <button type="button" className="secondary" onClick={() => { setUsername('demo.admin'); setPassword('password') }}>Use admin</button>
-                <button type="button" className="secondary" onClick={() => { setUsername('demo.support'); setPassword('password') }}>Use support</button>
               </div>
               {error && <div className="error">{error}</div>}
               <p className="muted" style={{ marginTop: 10, fontSize: '0.85rem' }}>
-                Demo users: demo.customer / demo.admin / demo.support — password <code>password</code>
+                Demo: <code>demo.customer</code> / <code>password</code> — or register a new username.
               </p>
               <p style={{ marginTop: 12, fontSize: '0.85rem', color: 'var(--muted)', textAlign: 'center' }}>
                 New here?{' '}

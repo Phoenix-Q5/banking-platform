@@ -12,6 +12,8 @@ public class InvestigateRequest {
     private String service;
     private String category;
     private String severity = "WARNING";
+    /** Optional ISO-8601 timestamp of when the failure was first observed. */
+    private String occurredAt;
     private Map<String, Object> context;
 
     public String getTitle() {
@@ -52,6 +54,14 @@ public class InvestigateRequest {
 
     public void setSeverity(String severity) {
         this.severity = severity;
+    }
+
+    public String getOccurredAt() {
+        return occurredAt;
+    }
+
+    public void setOccurredAt(String occurredAt) {
+        this.occurredAt = occurredAt;
     }
 
     public Map<String, Object> getContext() {

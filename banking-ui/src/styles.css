@@ -623,3 +623,79 @@ a.account-link {
   text-underline-offset: 2px;
   cursor: pointer;
 }
+
+.banner.ok {
+  background: rgba(15, 106, 106, 0.12);
+  border: 1px solid rgba(15, 106, 106, 0.28);
+  color: var(--sea-deep);
+  padding: 10px 14px;
+  border-radius: 4px;
+  font-size: 0.92rem;
+}
+
+.shortcut-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.shortcut-grid a {
+  display: block;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: rgba(255,255,255,0.65);
+  color: var(--navy);
+  font-size: 0.92rem;
+}
+
+.shortcut-grid a:hover {
+  border-color: var(--sea);
+  color: var(--sea-deep);
+}
+
+.loan-timeline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.loan-step {
+  padding: 6px 10px;
+  border-radius: 2px;
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,0.5);
+}
+
+.loan-step.done {
+  color: var(--sea-deep);
+  border-color: rgba(15, 106, 106, 0.35);
+  background: rgba(15, 106, 106, 0.1);
+}
+
+.loan-step.active {
+  color: white;
+  border-color: var(--sea);
+  background: var(--sea);
+}
+
+a.secondary, a.btn.secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 14px;
+  border-radius: 2px;
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,0.75);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+a.secondary:hover, a.btn.secondary:hover {
+  border-color: var(--sea);
+}
