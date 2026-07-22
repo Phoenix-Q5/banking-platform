@@ -1,6 +1,8 @@
 ﻿#!/bin/sh
-# Waits for Flyway migrations to finish, then seeds all databases once.
-# Idempotent: skips if seed customers already exist.
+# Waits for Flyway migrations to finish, then seeds all databases.
+# Idempotent: seed.sql uses ON CONFLICT DO NOTHING / UPDATE … WHERE NULL.
+# Always re-runs the SQL so a prior partial seed (e.g. customers inserted but
+# loans aborted) still gets loans, pending approvals, and support PINs.
 
 PGHOST="${PGHOST:-postgres}"
 PGUSER="${PGUSER:-banking}"
@@ -10,12 +12,16 @@ echo "==> db-seed: waiting for schema to be ready..."
 
 RETRIES=48   # 48 × 5s = 4 minutes max
 i=0
-# support_pin_hash arrives with customer-service V2 — waiting on it ensures
-# migrations (not just the base table) are done before we seed.
+# Wait for customer V2 (support_pin_hash) and loandb.loans so seed never
+# aborts mid-script on missing tables/columns.
 until psql -h "$PGHOST" -U "$PGUSER" -d customerdb \
       -c "SELECT support_pin_hash FROM customers LIMIT 1" >/dev/null 2>&1 \
    && psql -h "$PGHOST" -U "$PGUSER" -d loandb \
-      -c "SELECT 1 FROM loans LIMIT 1" >/dev/null 2>&1; do
+      -c "SELECT 1 FROM loans LIMIT 1" >/dev/null 2>&1 \
+   && psql -h "$PGHOST" -U "$PGUSER" -d accountdb \
+      -c "SELECT 1 FROM accounts LIMIT 1" >/dev/null 2>&1 \
+   && psql -h "$PGHOST" -U "$PGUSER" -d transactiondb \
+      -c "SELECT 1 FROM transactions LIMIT 1" >/dev/null 2>&1; do
   i=$((i + 1))
   if [ "$i" -ge "$RETRIES" ]; then
     echo "==> db-seed: timed out waiting for tables. Skipping seed."
@@ -25,29 +31,15 @@ until psql -h "$PGHOST" -U "$PGUSER" -d customerdb \
   sleep 5
 done
 
-# Idempotency check — skip if seed rows are already present
-COUNT=$(psql -h "$PGHOST" -U "$PGUSER" -d customerdb -t -A \
+CUSTOMERS=$(psql -h "$PGHOST" -U "$PGUSER" -d customerdb -t -A \
         -c "SELECT COUNT(*) FROM customers WHERE email LIKE 'seed.%'")
+LOANS=$(psql -h "$PGHOST" -U "$PGUSER" -d loandb -t -A \
+        -c "SELECT COUNT(*) FROM loans")
 
-if [ "$COUNT" -gt "0" ]; then
-  echo "==> db-seed: already seeded ($COUNT seed customers found)."
-  # Backfill: databases seeded before support PINs existed get the demo PIN.
-  MISSING=$(psql -h "$PGHOST" -U "$PGUSER" -d customerdb -t -A \
-            -c "SELECT COUNT(*) FROM customers WHERE support_pin_hash IS NULL")
-  if [ "$MISSING" -gt "0" ]; then
-    echo "==> db-seed: backfilling support PIN for $MISSING customers..."
-    psql -h "$PGHOST" -U "$PGUSER" -d customerdb -c \
-      "CREATE EXTENSION IF NOT EXISTS pgcrypto;
-       UPDATE customers
-       SET support_pin_hash = crypt('1234', gen_salt('bf', 10)),
-           support_pin_set_at = NOW()
-       WHERE support_pin_hash IS NULL;"
-  fi
-  echo "==> db-seed: nothing else to do."
-  exit 0
-fi
-
-echo "==> db-seed: running seed script..."
+echo "==> db-seed: current counts — seed customers=$CUSTOMERS loans=$LOANS"
+echo "==> db-seed: running seed script (idempotent)..."
 psql -h "$PGHOST" -U "$PGUSER" -d customerdb -f /seed/seed.sql
 
-echo "==> db-seed: finished."
+LOANS_AFTER=$(psql -h "$PGHOST" -U "$PGUSER" -d loandb -t -A \
+        -c "SELECT COUNT(*) FROM loans")
+echo "==> db-seed: finished. loans now=$LOANS_AFTER"

@@ -93,12 +93,13 @@ SELECT
 FROM generate_series(1, 100) n
 ON CONFLICT (email) DO NOTHING;
 
--- Support PIN: every customer gets the demo secret PIN '1234', stored as a
--- bcrypt hash (pgcrypto 'bf' == $2a$, compatible with Spring's BCryptPasswordEncoder).
-CREATE EXTENSION IF NOT EXISTS pgcrypto;
-
+-- Support PIN: every customer gets the demo secret PIN '1234'.
+-- Precomputed bcrypt ($2a$10…) so seeding does not depend on CREATE EXTENSION
+-- pgcrypto (a failure there previously aborted the whole script after customers
+-- were inserted, leaving loandb empty while seed customers still existed —
+-- and run-seed then skipped forever).
 UPDATE customers
-SET support_pin_hash = crypt('1234', gen_salt('bf', 10)),
+SET support_pin_hash = '$2a$10$qmhDnEpgmUTmeOeXLjrYiuEGml9TD84dz4ajRoVStJ9u3MRvV7tE6',
     support_pin_set_at = NOW()
 WHERE support_pin_hash IS NULL;
 
@@ -364,25 +365,26 @@ SELECT
 FROM generate_series(5, 25) n
 ON CONFLICT DO NOTHING;
 
--- Loans for the login-able demo customers so the demo user sees data
+-- Loans for the login-able demo customers so the demo user / admin pipeline
+-- always has actionable rows (APPROVED / UNDER_REVIEW / APPLIED / ACTIVE).
 INSERT INTO loans (
   id, customer_id, product_code, principal, interest_rate, term_months,
   monthly_payment, outstanding_balance, currency, status, purpose,
   created_at, updated_at
 ) VALUES
-  ('d3000000-0000-4000-8000-000000000001'::uuid, :'demo_customer_id'::uuid,
+  ('d3000000-0000-4000-8000-000000000001'::uuid, (:'demo_customer_id')::uuid,
    'PERSONAL_UNSECURED', 15000.00, 7.25, 36, 464.99, 9800.50, 'USD',
    'ACTIVE', 'Home renovation',
    NOW() - INTERVAL '200 days', NOW() - INTERVAL '3 days'),
-  ('d3000000-0000-4000-8000-000000000002'::uuid, :'demo_customer_id'::uuid,
+  ('d3000000-0000-4000-8000-000000000002'::uuid, (:'demo_customer_id')::uuid,
    'AUTO', 32000.00, 5.90, 60, 617.03, 32000.00, 'USD',
    'APPROVED', 'New vehicle purchase',
    NOW() - INTERVAL '12 days', NOW() - INTERVAL '1 day'),
-  ('d3000000-0000-4000-8000-000000000003'::uuid, :'demo_customer_id'::uuid,
+  ('d3000000-0000-4000-8000-000000000003'::uuid, (:'demo_customer_id')::uuid,
    'HOME_IMPROVEMENT', 48000.00, 8.10, 120, 585.11, 48000.00, 'USD',
    'UNDER_REVIEW', 'Kitchen remodel',
    NOW() - INTERVAL '4 days', NOW() - INTERVAL '6 hours'),
-  ('d3000000-0000-4000-8000-000000000004'::uuid, :'alex_customer_id'::uuid,
+  ('d3000000-0000-4000-8000-000000000004'::uuid, (:'alex_customer_id')::uuid,
    'PERSONAL_UNSECURED', 8000.00, 9.40, 24, 367.27, 8000.00, 'USD',
    'APPLIED', 'Debt consolidation',
    NOW() - INTERVAL '2 days', NOW() - INTERVAL '2 days')

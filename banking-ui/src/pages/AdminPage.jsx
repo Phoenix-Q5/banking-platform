@@ -18,7 +18,7 @@ const TABS = [
 export default function AdminPage() {
   const { session } = useAuth()
   const token = session.accessToken
-  const [tab, setTab] = useState('transfers')
+  const [tab, setTab] = useState('loans')
   const [customers, setCustomers] = useState([])
   const [loans, setLoans] = useState([])
   const [audit, setAudit] = useState([])
@@ -35,25 +35,31 @@ export default function AdminPage() {
   const [lookupLoans, setLookupLoans] = useState([])
 
   const load = async () => {
-    try {
-      const [c, l, a, pt, pa] = await Promise.all([
-        api.listCustomers(token),
-        api.listAllLoans(token),
-        api.listAudit(token),
-        api.listTransactionsByStatus(token, 'PENDING_APPROVAL'),
-        api.listAccountsByStatus(token, 'PENDING_APPROVAL'),
-      ])
-      setCustomers(c)
-      setLoans(l)
-      setAudit(a)
-      setPendingTransfers(pt)
-      setPendingAccounts(pa)
-    } catch (err) {
-      setError(err.message)
+    setError('')
+    const results = await Promise.allSettled([
+      api.listCustomers(token),
+      api.listAllLoans(token),
+      api.listAudit(token),
+      api.listTransactionsByStatus(token, 'PENDING_APPROVAL'),
+      api.listAccountsByStatus(token, 'PENDING_APPROVAL'),
+    ])
+    const [c, l, a, pt, pa] = results
+    if (c.status === 'fulfilled') setCustomers(c.value)
+    if (l.status === 'fulfilled') setLoans(l.value)
+    if (a.status === 'fulfilled') setAudit(a.value)
+    if (pt.status === 'fulfilled') setPendingTransfers(pt.value)
+    if (pa.status === 'fulfilled') setPendingAccounts(pa.value)
+    const failed = results.filter((r) => r.status === 'rejected')
+    if (failed.length) {
+      setError(failed.map((r) => r.reason?.message || String(r.reason)).join(' · '))
     }
   }
 
   useEffect(() => { load() }, [])
+
+  const actionableLoans = loans.filter((l) =>
+    ['APPLIED', 'UNDER_REVIEW', 'APPROVED'].includes(l.status)
+  )
 
   const writeAudit = (action, resourceType, resourceId, details, customerId) =>
     api.writeAudit(token, {
@@ -189,7 +195,10 @@ export default function AdminPage() {
 
       <div className="tabs">
         {TABS.map((t) => {
-          const count = t.id === 'transfers' ? pendingTransfers.length : t.id === 'accounts' ? pendingAccounts.length : 0
+          const count = t.id === 'transfers' ? pendingTransfers.length
+            : t.id === 'accounts' ? pendingAccounts.length
+            : t.id === 'loans' ? actionableLoans.length
+            : 0
           return (
             <button key={t.id} className={`tab ${tab === t.id ? 'active' : ''}`} onClick={() => setTab(t.id)}>
               {t.label}
@@ -304,7 +313,40 @@ export default function AdminPage() {
             </section>
           )}
           <section className="panel">
-            <h2>Loan pipeline (all customers)</h2>
+            <h2>Needs decision ({actionableLoans.length})</h2>
+            <p className="muted" style={{ marginTop: 0 }}>
+              APPLIED → Review → Approve → Activate, or Reject at any step.
+            </p>
+            {actionableLoans.length === 0 ? (
+              <div className="empty">
+                {loans.length === 0
+                  ? 'No loans in the database. Rebuild/restart and re-run db-seed (see infra/seed).'
+                  : 'No loans awaiting a decision.'}
+              </div>
+            ) : (
+              <table className="table">
+                <thead><tr><th>Loan</th><th>Customer</th><th>Amount</th><th>Status</th><th></th></tr></thead>
+                <tbody>
+                  {actionableLoans.map((l) => (
+                    <tr key={l.id}>
+                      <td>{l.productCode}<div className="muted">{l.purpose || '—'}</div></td>
+                      <td className="muted">{customerEmail(l.customerId) || `${l.customerId?.slice(0, 8)}…`}</td>
+                      <td>{money(l.principal, l.currency)}</td>
+                      <td><span className={`badge ${l.status}`}>{l.status}</span></td>
+                      <td className="actions">
+                        <button className="secondary" disabled={busy} onClick={() => decideLoan(l.id, 'REVIEW')}>Review</button>
+                        <button className="secondary" disabled={busy} onClick={() => decideLoan(l.id, 'APPROVE')}>Approve</button>
+                        <button className="secondary" disabled={busy} onClick={() => decideLoan(l.id, 'ACTIVATE')}>Activate</button>
+                        <button className="secondary" disabled={busy} onClick={() => decideLoan(l.id, 'REJECT')}>Reject</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </section>
+          <section className="panel" style={{ marginTop: 16 }}>
+            <h2>All loans ({loans.length})</h2>
             {loans.length === 0 ? <div className="empty">No loans.</div> : (
               <table className="table">
                 <thead><tr><th>Loan</th><th>Customer</th><th>Amount</th><th>Status</th><th></th></tr></thead>
@@ -316,10 +358,14 @@ export default function AdminPage() {
                       <td>{money(l.principal, l.currency)}</td>
                       <td><span className={`badge ${l.status}`}>{l.status}</span></td>
                       <td className="actions">
-                        <button className="secondary" disabled={busy} onClick={() => decideLoan(l.id, 'REVIEW')}>Review</button>
-                        <button className="secondary" disabled={busy} onClick={() => decideLoan(l.id, 'APPROVE')}>Approve</button>
-                        <button className="secondary" disabled={busy} onClick={() => decideLoan(l.id, 'ACTIVATE')}>Activate</button>
-                        <button className="secondary" disabled={busy} onClick={() => decideLoan(l.id, 'REJECT')}>Reject</button>
+                        {['APPLIED', 'UNDER_REVIEW', 'APPROVED'].includes(l.status) && (
+                          <>
+                            <button className="secondary" disabled={busy} onClick={() => decideLoan(l.id, 'REVIEW')}>Review</button>
+                            <button className="secondary" disabled={busy} onClick={() => decideLoan(l.id, 'APPROVE')}>Approve</button>
+                            <button className="secondary" disabled={busy} onClick={() => decideLoan(l.id, 'ACTIVATE')}>Activate</button>
+                            <button className="secondary" disabled={busy} onClick={() => decideLoan(l.id, 'REJECT')}>Reject</button>
+                          </>
+                        )}
                       </td>
                     </tr>
                   ))}

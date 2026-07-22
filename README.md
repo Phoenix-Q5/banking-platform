@@ -92,6 +92,21 @@ New accounts open in `PENDING_APPROVAL` and transfers of **$10,000 or more**
 approves or rejects them in the Admin console tabs. Admins can also place a
 temporary freeze on any customer account or card from the **Freeze** tab.
 
+The **Loans** tab lists seeded applications (APPLIED / UNDER_REVIEW / APPROVED)
+with Review → Approve → Activate or Reject. Seed data includes ~95 loans.
+
+### Re-seed after a partial / empty loan DB
+
+`db-seed` is idempotent and re-runs safely. If the Loans tab is empty:
+
+```bash
+docker-compose up -d --build
+docker-compose run --rm db-seed
+```
+
+To wipe everything and start clean: `docker-compose down -v` then
+`docker-compose up -d --build`.
+
 ## Try a live transfer alert
 
 1. Sign in as `demo.customer` at http://localhost:3001
