@@ -1,5 +1,5 @@
 import { createContext, useContext, useMemo, useState } from 'react'
-import { api, decodeJwt, loginWithPassword, rolesFromToken } from './api'
+import { api, decodeJwt, isTokenExpired, loginWithPassword, refreshAccessToken, rolesFromToken } from './api'
 
 const AuthContext = createContext(null)
 
@@ -8,6 +8,12 @@ export function AuthProvider({ children }) {
     const raw = localStorage.getItem('harbor.session')
     return raw ? JSON.parse(raw) : null
   })
+
+  const persist = (next) => {
+    localStorage.setItem('harbor.session', JSON.stringify(next))
+    setSession(next)
+    return next
+  }
 
   const value = useMemo(() => {
     const login = async (username, password) => {
@@ -28,7 +34,7 @@ export function AuthProvider({ children }) {
           customerId = null
         }
       }
-      const next = {
+      return persist({
         accessToken: tokens.access_token,
         refreshToken: tokens.refresh_token,
         username: payload?.preferred_username || username,
@@ -36,10 +42,36 @@ export function AuthProvider({ children }) {
         name: [payload?.given_name, payload?.family_name].filter(Boolean).join(' ') || username,
         roles,
         customerId,
+      })
+    }
+
+    /** Refresh the access token if it is expired / about to expire. */
+    const ensureFreshToken = async () => {
+      if (!session?.accessToken) return null
+      if (!isTokenExpired(session.accessToken)) return session.accessToken
+      if (!session.refreshToken) {
+        localStorage.removeItem('harbor.session')
+        setSession(null)
+        throw new Error('Session expired — please sign in again')
       }
-      localStorage.setItem('harbor.session', JSON.stringify(next))
-      setSession(next)
-      return next
+      try {
+        const tokens = await refreshAccessToken(session.refreshToken)
+        const payload = decodeJwt(tokens.access_token)
+        const next = {
+          ...session,
+          accessToken: tokens.access_token,
+          refreshToken: tokens.refresh_token || session.refreshToken,
+          roles: rolesFromToken(tokens.access_token),
+          username: payload?.preferred_username || session.username,
+          email: payload?.email || session.email,
+        }
+        persist(next)
+        return next.accessToken
+      } catch {
+        localStorage.removeItem('harbor.session')
+        setSession(null)
+        throw new Error('Session expired — please sign in again')
+      }
     }
 
     const logout = () => {
@@ -51,6 +83,7 @@ export function AuthProvider({ children }) {
       session,
       login,
       logout,
+      ensureFreshToken,
       isAuthenticated: Boolean(session?.accessToken),
       isAdmin: Boolean(session?.roles?.includes('ADMIN')),
       isSupport: Boolean(session?.roles?.includes('SUPPORT') || session?.roles?.includes('ADMIN')),

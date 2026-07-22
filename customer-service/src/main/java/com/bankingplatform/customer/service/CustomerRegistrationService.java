@@ -20,10 +20,13 @@ public class CustomerRegistrationService {
 
     private final CustomerRepository repository;
     private final KeycloakAdminClient keycloak;
+    private final SupportPinService supportPinService;
 
-    public CustomerRegistrationService(CustomerRepository repository, KeycloakAdminClient keycloak) {
+    public CustomerRegistrationService(CustomerRepository repository, KeycloakAdminClient keycloak,
+                                       SupportPinService supportPinService) {
         this.repository = repository;
         this.keycloak = keycloak;
+        this.supportPinService = supportPinService;
     }
 
     @Transactional
@@ -65,7 +68,8 @@ public class CustomerRegistrationService {
             Customer saved = repository.save(customer);
             log.info("customer_registered customerId={} username={} keycloakUserId={}",
                 saved.getId(), username, keycloakUserId);
-            return CustomerResponse.from(saved);
+            supportPinService.issueAndEmail(saved);
+            return CustomerResponse.from(repository.findById(saved.getId()).orElse(saved));
         } catch (RuntimeException ex) {
             keycloak.deleteUser(keycloakUserId);
             throw ex;

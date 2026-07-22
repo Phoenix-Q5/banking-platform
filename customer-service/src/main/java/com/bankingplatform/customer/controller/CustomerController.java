@@ -61,7 +61,8 @@ public class CustomerController {
         }
         Customer saved = repository.save(customer);
         log.info("customer_created customerId={} email={}", saved.getId(), saved.getEmail());
-        return CustomerResponse.from(saved);
+        supportPinService.issueAndEmail(saved);
+        return CustomerResponse.from(find(saved.getId()));
     }
 
     @GetMapping("/{id}")

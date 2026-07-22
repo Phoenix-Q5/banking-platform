@@ -162,6 +162,15 @@ services:
       KEYCLOAK_REALM: banking
       KEYCLOAK_ADMIN_USERNAME: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
+      EMAIL_ENABLED: ${EMAIL_ENABLED:-true}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-noreply@harborbank.local}
+      SMTP_STARTTLS: ${SMTP_STARTTLS:-true}
+      SMTP_AUTH: ${SMTP_AUTH:-true}
+      OPS_EMAIL_RECIPIENTS: ${OPS_EMAIL_RECIPIENTS:-}
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318/v1/traces
       SPRING_PROFILES_ACTIVE: json-logs
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092

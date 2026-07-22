@@ -23,6 +23,29 @@ export async function loginWithPassword(username, password) {
   return res.json()
 }
 
+export async function refreshAccessToken(refreshToken) {
+  const body = new URLSearchParams({
+    client_id: CLIENT_ID,
+    grant_type: 'refresh_token',
+    refresh_token: refreshToken,
+  })
+  const res = await fetch(`${KEYCLOAK_BASE}/realms/${REALM}/protocol/openid-connect/token`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body,
+  })
+  if (!res.ok) {
+    throw new Error('Session expired — please sign in again')
+  }
+  return res.json()
+}
+
+export function isTokenExpired(token, skewSeconds = 30) {
+  const payload = decodeJwt(token)
+  if (!payload?.exp) return true
+  return payload.exp * 1000 <= Date.now() + skewSeconds * 1000
+}
+
 export function decodeJwt(token) {
   try {
     const payload = token.split('.')[1]
@@ -56,7 +79,13 @@ async function request(path, { method = 'GET', token, body } = {}) {
     } catch {
       /* ignore */
     }
-    throw new Error(detail)
+    if (res.status === 401) {
+      throw new Error('Unauthorized (401) — your session may have expired. Sign out and sign back in, then retry.')
+    }
+    if (res.status === 405) {
+      throw new Error('Method not allowed (405) — the API gateway may be in fallback mode. Retry in a few seconds; if it persists, restart api-gateway.')
+    }
+    throw new Error(`${detail} (${res.status})`)
   }
   if (res.status === 204) return null
   return res.json()

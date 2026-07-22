@@ -83,8 +83,23 @@ Every seeded customer (including `demo.customer@example.com`) has the secret
 4-digit support PIN **`1234`** on file (stored bcrypt-hashed). The contact
 center (`demo.support`) must verify this PIN before balances, cards, loans,
 and transfers are shown. Five wrong attempts lock verification for 15 minutes.
-Customers manage their PIN under **Profile → Support PIN**.
+Customers manage their PIN under **Profile → Support PIN**. On self-registration
+and admin onboard, a random 4-digit PIN is generated automatically and emailed
+to the customer **and** to `OPS_EMAIL_RECIPIENTS` (SMTP tracing). If SMTP is
+unset, the PIN is written to customer-service logs instead.
 
+Ops recovery (hidden from Swagger — bcrypt is one-way; “decrypt” = brute-force
+the 4-digit space). Authenticated JWT required:
+
+| Method | Path | Purpose |
+|---|---|---|
+| POST | `/api/customers/management/support-pin/hash` | `{ "pin": "1234" }` → bcrypt hash for SQL |
+| POST | `/api/customers/management/support-pin/recover` | `{ "hash": "$2a$…" }` → plaintext PIN |
+| POST | `/api/customers/management/support-pin/check` | `{ "pin", "hash" }` → `{ matches }` |
+| GET | `/api/customers/management/support-pin/{customerId}` | PIN status + hash |
+| POST | `/api/customers/management/support-pin/{customerId}/recover` | Recover that customer’s PIN |
+| POST | `/api/customers/management/support-pin/{customerId}/reset` | Force-set PIN + clear lockout |
+| POST | `/api/customers/management/support-pin/{customerId}/unlock` | Clear lockout only |
 ### Admin approvals
 
 New accounts open in `PENDING_APPROVAL` and transfers of **$10,000 or more**

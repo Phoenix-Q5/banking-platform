@@ -20,6 +20,17 @@ spring:
       maximum-pool-size: 10
       minimum-idle: 2
       connection-timeout: 3000
+  mail:
+    host: ${SMTP_HOST:}
+    port: ${SMTP_PORT:587}
+    username: ${SMTP_USER:}
+    password: ${SMTP_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: ${SMTP_AUTH:true}
+          starttls:
+            enable: ${SMTP_STARTTLS:true}
   jpa:
     hibernate:
       ddl-auto: validate
@@ -77,6 +88,11 @@ harbor:
     realm: ${KEYCLOAK_REALM:banking}
     admin-username: ${KEYCLOAK_ADMIN_USERNAME:admin}
     admin-password: ${KEYCLOAK_ADMIN_PASSWORD:admin}
+  mail:
+    enabled: ${EMAIL_ENABLED:true}
+    from: ${SMTP_FROM:noreply@harborbank.local}
+    # Tracing copy of newly issued support PINs (comma-separated).
+    ops-recipients: ${OPS_EMAIL_RECIPIENTS:}
 
 springdoc:
   api-docs:

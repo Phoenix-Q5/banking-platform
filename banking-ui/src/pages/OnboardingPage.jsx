@@ -10,7 +10,7 @@ const EMPTY_FORM = {
 }
 
 export default function OnboardingPage() {
-  const { session } = useAuth()
+  const { session, ensureFreshToken } = useAuth()
   const token = session.accessToken
 
   const [form, setForm] = useState(EMPTY_FORM)
@@ -28,6 +28,7 @@ export default function OnboardingPage() {
     setError('')
     setCreated(null)
     try {
+      const token = await ensureFreshToken()
       const payload = { ...form }
       Object.keys(payload).forEach((k) => { if (payload[k] === '') delete payload[k] })
       const customer = await api.createCustomer(token, payload)
@@ -74,8 +75,13 @@ export default function OnboardingPage() {
           <div style={{ marginTop: 6, fontSize: '0.9rem' }}>
             ID: <code>{created.customer.id}</code> · {created.customer.firstName} {created.customer.lastName} · {created.customer.email}
             {created.account && (
-              <span> · Account <code>{created.account.accountNumber}</code> ({created.account.currency}) opened.</span>
+              <span> · Account <code>{created.account.accountNumber}</code> ({created.account.currency}) opened
+                {created.account.status === 'PENDING_APPROVAL' ? ' — pending approval' : ''}.</span>
             )}
+            <div style={{ marginTop: 6 }}>
+              A support PIN was generated and emailed to the customer
+              {created.customer.supportPinSet ? ' (and the SMTP tracing recipients).' : '.'}
+            </div>
           </div>
         </div>
       )}

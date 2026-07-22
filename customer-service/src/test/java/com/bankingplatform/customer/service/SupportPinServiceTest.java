@@ -1,6 +1,7 @@
 package com.bankingplatform.customer.service;
 
 import com.bankingplatform.customer.dto.CustomerDtos.SupportPinVerifyResponse;
+import com.bankingplatform.customer.email.SupportPinMailer;
 import com.bankingplatform.customer.model.Customer;
 import com.bankingplatform.customer.repository.CustomerRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -25,7 +26,8 @@ class SupportPinServiceTest {
     @BeforeEach
     void setUp() {
         repository = Mockito.mock(CustomerRepository.class);
-        service = new SupportPinService(repository);
+        SupportPinMailer mailer = Mockito.mock(SupportPinMailer.class);
+        service = new SupportPinService(repository, mailer);
         customer = new Customer();
         customer.setId(customerId);
         customer.setEmail("pin.test@example.com");
@@ -91,5 +93,31 @@ class SupportPinServiceTest {
     @Test
     void verifyWithoutPinOnFileThrows() {
         assertThrows(IllegalArgumentException.class, () -> service.verify(customerId, "1234"));
+    }
+
+    @Test
+    void recoverFindsFourDigitPinFromHash() {
+        // Use a small PIN so the 0000–9999 search finishes quickly in unit tests.
+        String hash = service.hash("0007");
+        assertEquals("0007", service.recover(hash));
+    }
+
+    @Test
+    void hashAndMatchesRoundTrip() {
+        String hash = service.hash("9988");
+        assertTrue(service.matches("9988", hash));
+        assertFalse(service.matches("0000", hash));
+    }
+
+    @Test
+    void unlockClearsLockout() {
+        service.setPin(customerId, "1234");
+        for (int i = 0; i < SupportPinService.MAX_FAILED_ATTEMPTS; i++) {
+            service.verify(customerId, "0000");
+        }
+        assertTrue(service.status(customerId).locked());
+        service.unlock(customerId);
+        assertFalse(service.status(customerId).locked());
+        assertTrue(service.verify(customerId, "1234").verified());
     }
 }
