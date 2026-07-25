@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ops Agent Command Center</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink: #10233a;
+      --muted: #5b6b7c;
+      --paper: #f3f6f9;
+      --panel: rgba(255, 255, 255, 0.84);
+      --line: #d5dee8;
+      --accent: #0b6e4f;
+      --accent-2: #1c4d7a;
+      --warn: #9a5b00;
+      --crit: #9b1d2d;
+      --ok: #0b6e4f;
+      --shadow: 0 18px 50px rgba(16, 35, 58, 0.08);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh; color: var(--ink);
+      font-family: "IBM Plex Sans", sans-serif;
+      background:
+        radial-gradient(1200px 600px at 8% -12%, rgba(28, 77, 122, 0.16), transparent 60%),
+        radial-gradient(900px 500px at 100% 0%, rgba(11, 110, 79, 0.12), transparent 55%),
+        linear-gradient(180deg, #e8eef5 0%, var(--paper) 45%, #eef3f7 100%);
+    }
+    .shell { max-width: 1400px; margin: 0 auto; padding: 24px 18px 48px; }
+    header { display: grid; gap: 10px; margin-bottom: 18px; }
+    .brand-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: baseline; justify-content: space-between; }
+    .brand {
+      font-family: "Source Serif 4", Georgia, serif;
+      font-size: clamp(1.7rem, 3.5vw, 2.35rem);
+      font-weight: 700; letter-spacing: -0.02em; line-height: 1.05;
+    }
+    .nav { display: flex; gap: 8px; flex-wrap: wrap; }
+    .nav a {
+      text-decoration: none; color: var(--accent-2);
+      border: 1px solid var(--line); background: #fff;
+      padding: 6px 12px; font-size: 0.88rem; font-weight: 550;
+    }
+    .nav a.current { background: var(--accent-2); color: #fff; border-color: var(--accent-2); }
+    .tagline { max-width: 52rem; color: var(--muted); margin: 0; line-height: 1.5; }
+    .meta { display: flex; flex-wrap: wrap; gap: 8px 16px; color: var(--muted); font-size: 0.88rem; align-items: center; }
+    .meta strong { color: var(--ink); }
+    .panel {
+      background: var(--panel); backdrop-filter: blur(10px);
+      border: 1px solid rgba(213, 222, 232, 0.9); box-shadow: var(--shadow);
+      border-radius: 4px; padding: 16px; margin-bottom: 14px;
+    }
+    h2 {
+      margin: 0 0 12px; font-size: 0.76rem; letter-spacing: 0.12em;
+      text-transform: uppercase; color: var(--accent-2); font-weight: 600;
+    }
+    .stats {
+      display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; margin-bottom: 14px;
+    }
+    @media (max-width: 1100px) { .stats { grid-template-columns: repeat(3, 1fr); } }
+    @media (max-width: 640px) { .stats { grid-template-columns: repeat(2, 1fr); } }
+    .stat {
+      background: var(--panel); border: 1px solid var(--line); box-shadow: var(--shadow);
+      padding: 14px 12px; border-radius: 4px; min-height: 88px;
+    }
+    .stat .label { font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+    .stat .value { font-size: 1.55rem; font-weight: 600; margin-top: 6px; line-height: 1.1; }
+    .stat .hint { font-size: 0.8rem; color: var(--muted); margin-top: 4px; }
+    .stat.HEALTHY .value, .stat.ok .value { color: var(--ok); }
+    .stat.DEGRADED .value, .stat.warn .value { color: var(--warn); }
+    .stat.CRITICAL .value, .stat.crit .value { color: var(--crit); }
+    .layout { display: grid; grid-template-columns: 1.35fr 0.95fr; gap: 14px; align-items: start; }
+    @media (max-width: 1080px) { .layout { grid-template-columns: 1fr; } }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    @media (max-width: 820px) { .grid-2 { grid-template-columns: 1fr; } }
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+    th, td { text-align: left; padding: 7px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
+    th { color: var(--muted); font-weight: 550; font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; }
+    tr.clickable { cursor: pointer; }
+    tr.clickable:hover { background: rgba(28, 77, 122, 0.05); }
+    .badge {
+      display: inline-block; font-size: 0.68rem; letter-spacing: 0.04em; text-transform: uppercase;
+      padding: 2px 7px; border: 1px solid var(--line); margin-right: 4px; color: var(--muted);
+    }
+    .badge.CRITICAL, .badge.DOWN { color: var(--crit); border-color: rgba(155, 29, 45, 0.4); }
+    .badge.WARNING, .badge.DEGRADED { color: var(--warn); border-color: rgba(154, 91, 0, 0.4); }
+    .badge.HEALTHY, .badge.UP, .badge.INFO { color: var(--ok); border-color: rgba(11, 110, 79, 0.4); }
+    .muted { color: var(--muted); font-size: 0.86rem; }
+    .empty { color: var(--muted); padding: 6px 0; }
+    .bar {
+      height: 6px; background: #e4ebf2; border-radius: 2px; overflow: hidden; margin-top: 4px; min-width: 72px;
+    }
+    .bar > span { display: block; height: 100%; background: var(--accent-2); }
+    .bar.warn > span { background: var(--warn); }
+    .bar.crit > span { background: var(--crit); }
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+    .chip {
+      border: 1px solid var(--line); background: #fff; color: var(--accent-2);
+      padding: 6px 10px; font-size: 0.82rem; cursor: pointer; text-align: left; max-width: 100%;
+    }
+    .chip:hover { border-color: var(--accent-2); }
+    textarea, button, input, select { font: inherit; }
+    textarea {
+      width: 100%; min-height: 78px; resize: vertical; border: 1px solid var(--line);
+      background: #fff; color: var(--ink); padding: 10px 12px; border-radius: 2px;
+    }
+    .row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; align-items: center; }
+    button {
+      border: 0; background: var(--accent); color: #fff; padding: 8px 14px;
+      border-radius: 2px; cursor: pointer; font-weight: 550;
+    }
+    button.secondary { background: transparent; color: var(--accent-2); border: 1px solid var(--line); }
+    button:disabled { opacity: 0.55; cursor: wait; }
+    select {
+      border: 1px solid var(--line); background: #fff; color: var(--ink);
+      padding: 8px 10px; border-radius: 2px;
+    }
+    .reply {
+      margin-top: 12px; white-space: pre-wrap; line-height: 1.55; font-size: 0.92rem;
+      border-top: 1px solid var(--line); padding-top: 12px; max-height: 420px; overflow: auto;
+    }
+    .signal {
+      border: 1px solid var(--line); background: #fff; padding: 8px 10px; margin-bottom: 8px; font-size: 0.9rem;
+    }
+    .logline {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.78rem; border-bottom: 1px dashed var(--line); padding: 5px 0; word-break: break-word;
+    }
+    .toast {
+      position: fixed; right: 18px; bottom: 18px; max-width: 380px;
+      background: var(--ink); color: #fff; padding: 12px 16px; border-radius: 3px;
+      font-size: 0.9rem; opacity: 0; transition: opacity 0.25s; pointer-events: none; white-space: pre-wrap;
+    }
+    .toast.show { opacity: 0.96; }
+    .toast.error { background: var(--crit); }
+    #loginBar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .userchip { border: 1px solid var(--line); padding: 4px 10px; background: #fff; font-size: 0.88rem; }
+    input[type="text"], input[type="password"] {
+      border: 1px solid var(--line); background: #fff; color: var(--ink);
+      padding: 8px 10px; border-radius: 2px;
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header>
+      <div class="brand-row">
+        <div class="brand">Ops Agent Command Center</div>
+        <nav class="nav">
+          <a class="current" href="/command-center.html">Command Center</a>
+          <a href="/">Incidents Console</a>
+        </nav>
+      </div>
+      <p class="tagline">
+        Live metrics, alerts, JVM health, slow endpoints, and Tempo traces — explained by the same
+        ops-agent tools that investigate incidents (Prometheus, Loki, Tempo).
+      </p>
+      <div class="meta" id="meta"><span>Loading snapshot…</span></div>
+      <div id="loginBar" hidden>
+        <input type="text" id="loginUser" placeholder="username (e.g. demo.admin)" autocomplete="username" />
+        <input type="password" id="loginPass" placeholder="password" autocomplete="current-password" />
+        <button id="loginBtn">Sign in</button>
+      </div>
+      <div id="userBar" hidden>
+        <span class="userchip">Signed in as <strong id="userName"></strong></span>
+        <button class="secondary" id="logoutBtn">Sign out</button>
+      </div>
+    </header>
+
+    <div class="stats" id="stats"></div>
+
+    <div class="layout">
+      <div>
+        <section class="panel">
+          <h2>Signals &amp; warnings</h2>
+          <div id="signals" class="empty">No signals yet.</div>
+        </section>
+
+        <div class="grid-2">
+          <section class="panel">
+            <h2>Slowest endpoints</h2>
+            <div id="endpoints" class="empty">Loading…</div>
+          </section>
+          <section class="panel">
+            <h2>Slow traces (Tempo)</h2>
+            <div id="traces" class="empty">Loading…</div>
+          </section>
+        </div>
+
+        <section class="panel">
+          <h2>Service health · latency · JVM</h2>
+          <div id="services" class="empty">Loading…</div>
+        </section>
+
+        <div class="grid-2">
+          <section class="panel">
+            <h2>Firing alerts</h2>
+            <div id="alerts" class="empty">Loading…</div>
+          </section>
+          <section class="panel">
+            <h2>Recent ERROR logs (Loki)</h2>
+            <div id="errors" class="empty">Loading…</div>
+          </section>
+        </div>
+      </div>
+
+      <div>
+        <section class="panel">
+          <h2>Ask the agent</h2>
+          <p class="muted" style="margin-top:0">
+            Explains the live snapshot with prometheus_query, loki_query, tempo_search, and health tools.
+          </p>
+          <div class="row">
+            <select id="focus">
+              <option value="overview">Overview briefing</option>
+              <option value="endpoints">Endpoint breakdown</option>
+              <option value="heap">Heap &amp; GC</option>
+              <option value="traces">Slow traces</option>
+              <option value="alerts">Alerts</option>
+              <option value="health">Service health</option>
+            </select>
+            <button class="secondary" id="refreshBtn">Refresh snapshot</button>
+          </div>
+          <textarea id="prompt" placeholder="Optional: dig into a specific service, endpoint, or alert…"></textarea>
+          <div class="row">
+            <button id="explainBtn">Explain with ops-agent</button>
+          </div>
+          <div class="chips" id="prompts"></div>
+          <div class="reply" id="reply">Pick a focus area or suggested prompt to generate an investigation report.</div>
+        </section>
+
+        <section class="panel">
+          <h2>Agent capabilities</h2>
+          <div id="capabilities" class="muted"></div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const $ = id => document.getElementById(id);
+    let state = {
+      securityEnabled: false,
+      keycloakTokenUrl: null,
+      token: sessionStorage.getItem('ops_token') || null,
+      user: sessionStorage.getItem('ops_user') || null,
+      snapshot: null,
+    };
+
+    function toast(message, isError) {
+      const el = $('toast');
+      el.textContent = message;
+      el.className = 'toast show' + (isError ? ' error' : '');
+      clearTimeout(el._t);
+      el._t = setTimeout(() => el.className = 'toast', 4500);
+    }
+
+    function escapeHtml(s) {
+      return String(s ?? '')
+        .replaceAll('&', '&amp;').replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;').replaceAll('"', '&quot;');
+    }
+
+    function fmtBytes(n) {
+      const v = Number(n) || 0;
+      if (v < 1024) return v + ' B';
+      if (v < 1048576) return (v / 1024).toFixed(1) + ' KiB';
+      if (v < 1073741824) return (v / 1048576).toFixed(1) + ' MiB';
+      return (v / 1073741824).toFixed(2) + ' GiB';
+    }
+
+    function fmtTime(iso) {
+      if (!iso) return '—';
+      const d = new Date(iso);
+      return isNaN(d) ? String(iso) : d.toLocaleTimeString();
+    }
+
+    async function api(path, options = {}) {
+      options.headers = Object.assign({ 'Content-Type': 'application/json' }, options.headers || {});
+      if (state.token) options.headers['Authorization'] = 'Bearer ' + state.token;
+      const res = await fetch(path, options);
+      if (res.status === 401) {
+        clearAuth();
+        throw new Error('Sign-in required for Command Center APIs.');
+      }
+      if (res.status === 403) throw new Error('Not permitted for this action.');
+      if (!res.ok) {
+        let msg = res.status + ' ' + res.statusText;
+        try { const body = await res.json(); msg = body.message || body.error || msg; } catch (e) {}
+        throw new Error(msg);
+      }
+      return res.status === 204 ? null : res.json();
+    }
+
+    function decodeJwt(token) {
+      try { return JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))); }
+      catch (e) { return {}; }
+    }
+
+    function clearAuth() {
+      state.token = null; state.user = null;
+      sessionStorage.removeItem('ops_token');
+      sessionStorage.removeItem('ops_user');
+      sessionStorage.removeItem('ops_roles');
+      renderAuth();
+    }
+
+    function renderAuth() {
+      const needsLogin = state.securityEnabled && !state.token;
+      $('loginBar').hidden = !needsLogin;
+      $('userBar').hidden = !(state.securityEnabled && state.token);
+      if (state.token) $('userName').textContent = state.user || 'operator';
+    }
+
+    async function login() {
+      const username = $('loginUser').value.trim();
+      const password = $('loginPass').value;
+      if (!username || !password) { toast('Enter username and password', true); return; }
+      $('loginBtn').disabled = true;
+      try {
+        const body = new URLSearchParams({
+          grant_type: 'password', client_id: 'banking-web', username, password
+        });
+        const res = await fetch(state.keycloakTokenUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.error_description || 'Login failed');
+        }
+        const data = await res.json();
+        const claims = decodeJwt(data.access_token);
+        state.token = data.access_token;
+        state.user = claims.preferred_username || username;
+        sessionStorage.setItem('ops_token', state.token);
+        sessionStorage.setItem('ops_user', state.user);
+        sessionStorage.setItem('ops_roles', JSON.stringify((claims.realm_access && claims.realm_access.roles) || []));
+        $('loginPass').value = '';
+        renderAuth();
+        toast('Signed in as ' + state.user);
+        await loadSnapshot();
+      } catch (e) { toast(e.message, true); }
+      finally { $('loginBtn').disabled = false; }
+    }
+
+    async function loadMeta() {
+      const data = await api('/api/agent/health-summary');
+      state.securityEnabled = !!data.securityEnabled;
+      state.keycloakTokenUrl = data.keycloakTokenUrl;
+      renderAuth();
+      return data;
+    }
+
+    function heapBar(ratio) {
+      const pct = Math.max(0, Math.min(100, Math.round((Number(ratio) || 0) * 100)));
+      const cls = pct >= 85 ? 'crit' : pct >= 70 ? 'warn' : '';
+      return `<div class="bar ${cls}" title="${pct}%"><span style="width:${pct}%"></span></div>`;
+    }
+
+    function renderSnapshot(snap) {
+      state.snapshot = snap;
+      const summary = snap.summary || {};
+      const overall = snap.overallStatus || 'HEALTHY';
+      $('meta').innerHTML = `
+        <span><strong>Platform</strong> ${escapeHtml(snap.platform)}</span>
+        <span><strong>Engine</strong> ${escapeHtml(snap.engine || '—')}</span>
+        <span><strong>LLM</strong> ${snap.llmEnabled ? 'enabled' : 'heuristic fallback'}</span>
+        <span><strong>Status</strong> <span class="badge ${overall}">${overall}</span></span>
+        <span><strong>Updated</strong> ${escapeHtml(fmtTime(snap.generatedAt))}</span>
+      `;
+
+      $('stats').innerHTML = `
+        <div class="stat ${overall}"><div class="label">Overall</div><div class="value">${escapeHtml(overall)}</div><div class="hint">live snapshot</div></div>
+        <div class="stat ${(summary.servicesUp === summary.servicesTotal) ? 'ok' : 'crit'}"><div class="label">Services up</div><div class="value">${summary.servicesUp ?? 0}/${summary.servicesTotal ?? 0}</div><div class="hint">Prometheus targets</div></div>
+        <div class="stat ${(summary.criticalSignals || 0) > 0 ? 'crit' : (summary.warningSignals || 0) > 0 ? 'warn' : 'ok'}"><div class="label">Signals</div><div class="value">${(summary.criticalSignals || 0) + (summary.warningSignals || 0)}</div><div class="hint">${summary.criticalSignals || 0} critical · ${summary.warningSignals || 0} warning</div></div>
+        <div class="stat ${(summary.firingAlerts || 0) > 0 ? 'warn' : 'ok'}"><div class="label">Alerts</div><div class="value">${summary.firingAlerts || 0}</div><div class="hint">firing</div></div>
+        <div class="stat"><div class="label">Slow APIs</div><div class="value">${summary.slowEndpoints || 0}</div><div class="hint">endpoint rows</div></div>
+        <div class="stat"><div class="label">Slow traces</div><div class="value">${summary.slowTraces || 0}</div><div class="hint">Tempo search</div></div>
+      `;
+
+      const signals = snap.signals || [];
+      $('signals').innerHTML = signals.length ? signals.map(s => `
+        <div class="signal">
+          <span class="badge ${escapeHtml(s.severity)}">${escapeHtml(s.severity)}</span>
+          <strong>${escapeHtml(s.title)}</strong>
+          <div class="muted">${escapeHtml(s.detail)}</div>
+          ${s.suggestPrompt ? `<div class="row"><button class="secondary suggest" data-prompt="${escapeHtml(s.suggestPrompt)}">Explain this</button></div>` : ''}
+        </div>
+      `).join('') : '<div class="empty">No warning or critical signals — platform looks healthy.</div>';
+
+      const endpoints = snap.slowestEndpoints || [];
+      $('endpoints').innerHTML = endpoints.length ? `
+        <table>
+          <thead><tr><th>Service</th><th>Endpoint</th><th>Avg ms</th><th>RPS</th></tr></thead>
+          <tbody>
+            ${endpoints.map(e => `
+              <tr class="clickable suggest-row" data-prompt="Explain why ${e.method || ''} ${e.uri || ''} on ${e.job || ''} is slow using metrics and Tempo traces">
+                <td>${escapeHtml(e.job)}</td>
+                <td><code>${escapeHtml(e.method)} ${escapeHtml(e.uri)}</code></td>
+                <td><strong>${escapeHtml(e.avgLatencyMs)}</strong></td>
+                <td>${escapeHtml(e.rps)}</td>
+              </tr>`).join('')}
+          </tbody>
+        </table>` : '<div class="empty">No HTTP latency samples yet.</div>';
+
+      const traces = snap.traces || [];
+      $('traces').innerHTML = traces.length ? `
+        <table>
+          <thead><tr><th>Service</th><th>Trace</th><th>ms</th></tr></thead>
+          <tbody>
+            ${traces.map(t => `
+              <tr class="clickable suggest-row" data-prompt="Analyze Tempo trace ${t.traceID} for ${t.service}">
+                <td>${escapeHtml(t.service)}</td>
+                <td><code>${escapeHtml((t.rootTraceName || t.traceID || '').toString().slice(0, 42))}</code>
+                  <div class="muted">${escapeHtml((t.traceID || '').toString().slice(0, 16))}…</div></td>
+                <td><strong>${escapeHtml(t.durationMs)}</strong></td>
+              </tr>`).join('')}
+          </tbody>
+        </table>` : '<div class="empty">No recent traces found.</div>';
+
+      const services = snap.services || [];
+      $('services').innerHTML = services.length ? `
+        <table>
+          <thead><tr><th>Service</th><th>Status</th><th>p95</th><th>5xx %</th><th>Heap</th><th>GC s/s</th><th>CPU</th></tr></thead>
+          <tbody>
+            ${services.map(s => `
+              <tr class="clickable suggest-row" data-prompt="Investigate health, latency, heap and GC for ${s.name}">
+                <td>${escapeHtml(s.name)}</td>
+                <td><span class="badge ${s.up ? 'UP' : 'DOWN'}">${s.up ? 'UP' : 'DOWN'}</span></td>
+                <td>${escapeHtml(s.p95Ms ?? '—')} ms</td>
+                <td>${escapeHtml(s.errorRatePct ?? 0)}</td>
+                <td>${Math.round((s.heapUsedRatio || 0) * 100)}% ${heapBar(s.heapUsedRatio)}
+                  <div class="muted">${fmtBytes(s.heapUsedBytes)} / ${fmtBytes(s.heapMaxBytes)}</div></td>
+                <td>${escapeHtml(s.gcPauseSecondsPerSec ?? 0)}</td>
+                <td>${escapeHtml(s.cpuUsage ?? 0)}</td>
+              </tr>`).join('')}
+          </tbody>
+        </table>` : '<div class="empty">No service metrics.</div>';
+
+      const alerts = snap.alerts || [];
+      $('alerts').innerHTML = alerts.length ? alerts.map(a => `
+        <div class="signal">
+          <span class="badge ${(a.severity || 'warning').toUpperCase()}">${escapeHtml((a.severity || 'warning').toUpperCase())}</span>
+          <strong>${escapeHtml(a.alertname)}</strong>
+          <div class="muted">${escapeHtml(a.summary || a.job || '')}</div>
+        </div>`).join('') : '<div class="empty">No firing alerts.</div>';
+
+      const errors = snap.recentErrors || [];
+      $('errors').innerHTML = errors.length
+        ? errors.map(e => `<div class="logline">${escapeHtml(e.line)}</div>`).join('')
+        : '<div class="empty">No recent ERROR lines (or Loki unavailable).</div>';
+
+      const prompts = snap.suggestedPrompts || [];
+      $('prompts').innerHTML = prompts.map(p =>
+        `<button class="chip suggest" data-prompt="${escapeHtml(p)}">${escapeHtml(p)}</button>`).join('');
+
+      $('capabilities').innerHTML = (snap.capabilities || []).map(c =>
+        `<div>• ${escapeHtml(c)}</div>`).join('') || '<div class="empty">—</div>';
+
+      document.querySelectorAll('.suggest, .suggest-row').forEach(el => {
+        el.addEventListener('click', () => {
+          const prompt = el.getAttribute('data-prompt');
+          if (!prompt) return;
+          $('prompt').value = prompt;
+          explain(prompt);
+        });
+      });
+    }
+
+    async function loadSnapshot() {
+      try {
+        const snap = await api('/api/agent/monitoring/snapshot');
+        renderSnapshot(snap);
+      } catch (e) {
+        $('meta').innerHTML = `<span class="badge CRITICAL">error</span> ${escapeHtml(e.message)}`;
+        toast(e.message, true);
+      }
+    }
+
+    async function explain(messageOverride) {
+      const focus = $('focus').value;
+      const message = (messageOverride != null ? messageOverride : $('prompt').value).trim();
+      $('explainBtn').disabled = true;
+      $('reply').textContent = 'Investigating… correlating Prometheus, Loki, and Tempo via ops-agent tools.';
+      try {
+        const data = await api('/api/agent/monitoring/explain', {
+          method: 'POST',
+          body: JSON.stringify({ focus, message: message || null })
+        });
+        let text = data.reply || 'Investigation complete.';
+        if (data.incidentId) text += `\n\n— incident ${data.incidentId}`;
+        $('reply').textContent = text;
+        toast('Investigation complete' + (data.incidentId ? ' · ' + data.incidentId : ''));
+        await loadSnapshot();
+      } catch (e) {
+        $('reply').textContent = 'Explain failed: ' + e.message;
+        toast(e.message, true);
+      } finally {
+        $('explainBtn').disabled = false;
+      }
+    }
+
+    $('loginBtn').addEventListener('click', login);
+    $('loginPass').addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
+    $('logoutBtn').addEventListener('click', () => { clearAuth(); toast('Signed out'); });
+    $('refreshBtn').addEventListener('click', loadSnapshot);
+    $('explainBtn').addEventListener('click', () => explain());
+
+    loadMeta().then(loadSnapshot).catch(e => toast(e.message, true));
+    setInterval(loadSnapshot, 30000);
+  </script>
+</body>
+</html>

@@ -44,11 +44,12 @@ public class SecurityConfig {
             http
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                    .requestMatchers("/", "/index.html", "/favicon.ico").permitAll()
+                    .requestMatchers("/", "/index.html", "/command-center.html", "/favicon.ico").permitAll()
                     .requestMatchers("/actuator/health/**", "/actuator/prometheus", "/actuator/info").permitAll()
                     .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                     .requestMatchers("/api/agent/webhooks/**").permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/agent/health-summary").permitAll()
+                    .requestMatchers(HttpMethod.GET, "/api/agent/monitoring/snapshot").hasAnyRole(ROLE_ADMIN, ROLE_SUPPORT)
                     .requestMatchers("/api/agent/restart-requests/*/confirm").hasRole(ROLE_ADMIN)
                     .requestMatchers("/api/agent/**").hasAnyRole(ROLE_ADMIN, ROLE_SUPPORT)
                     .anyRequest().authenticated()

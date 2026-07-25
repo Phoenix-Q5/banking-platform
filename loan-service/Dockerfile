@@ -16,7 +16,7 @@ RUN mvn -q -pl loan-service -am dependency:go-offline -DskipTests || true
 COPY banking-events banking-events
 COPY loan-service loan-service
 RUN mvn -q -pl loan-service -am clean package -DskipTests
-FROM eclipse-temurin:17-jre-alpine
+FROM eclipse-temurin:17-jre-jammy
 WORKDIR /app
 COPY --from=build /workspace/loan-service/target/*.jar app.jar
 EXPOSE 8089

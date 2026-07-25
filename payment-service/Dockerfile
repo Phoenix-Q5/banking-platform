@@ -16,7 +16,7 @@ RUN mvn -q -pl payment-service -am dependency:go-offline -DskipTests || true
 COPY banking-events banking-events
 COPY payment-service payment-service
 RUN mvn -q -pl payment-service -am clean package -DskipTests
-FROM eclipse-temurin:17-jre-alpine
+FROM eclipse-temurin:17-jre-jammy
 WORKDIR /app
 COPY --from=build /workspace/payment-service/target/*.jar app.jar
 EXPOSE 8084

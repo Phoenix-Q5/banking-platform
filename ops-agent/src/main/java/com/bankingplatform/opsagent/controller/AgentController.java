@@ -9,8 +9,10 @@ import com.bankingplatform.opsagent.model.ChatRequest;
 import com.bankingplatform.opsagent.model.Incident;
 import com.bankingplatform.opsagent.model.InvestigateRequest;
 import com.bankingplatform.opsagent.model.MitigationAction;
+import com.bankingplatform.opsagent.model.MonitoringExplainRequest;
 import com.bankingplatform.opsagent.service.IncidentStore;
 import com.bankingplatform.opsagent.service.InvestigationService;
+import com.bankingplatform.opsagent.service.MonitoringSnapshotService;
 import com.bankingplatform.opsagent.tools.ToolRegistry;
 import com.bankingplatform.opsagent.webhook.AlertmanagerWebhookService;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -42,6 +44,7 @@ public class AgentController {
     private final OpsAgentProperties properties;
     private final ReasoningEngineRouter reasoningEngineRouter;
     private final OpsAgentMetrics opsAgentMetrics;
+    private final MonitoringSnapshotService monitoringSnapshotService;
 
     public AgentController(InvestigationService investigationService,
                            IncidentStore incidentStore,
@@ -50,7 +53,8 @@ public class AgentController {
                            ToolRegistry toolRegistry,
                            OpsAgentProperties properties,
                            ReasoningEngineRouter reasoningEngineRouter,
-                           OpsAgentMetrics opsAgentMetrics) {
+                           OpsAgentMetrics opsAgentMetrics,
+                           MonitoringSnapshotService monitoringSnapshotService) {
         this.investigationService = investigationService;
         this.incidentStore = incidentStore;
         this.alertmanagerWebhookService = alertmanagerWebhookService;
@@ -59,6 +63,7 @@ public class AgentController {
         this.properties = properties;
         this.reasoningEngineRouter = reasoningEngineRouter;
         this.opsAgentMetrics = opsAgentMetrics;
+        this.monitoringSnapshotService = monitoringSnapshotService;
     }
 
     @GetMapping("/health-summary")
@@ -160,6 +165,59 @@ public class AgentController {
         );
     }
 
+    /**
+     * Live Command Center snapshot: health, endpoint latency, JVM/GC, Tempo traces,
+     * firing alerts, and Loki errors — assembled via the same tools the LLM uses.
+     */
+    @GetMapping("/monitoring/snapshot")
+    public Map<String, Object> monitoringSnapshot() {
+        Map<String, Object> snap = monitoringSnapshotService.snapshot();
+        snap.put("engine", reasoningEngineRouter.name());
+        snap.put("llmEnabled", properties.getLlm().isEnabled());
+        return snap;
+    }
+
+    /**
+     * Ask the ops-agent to explain the live snapshot (or a focus area) using
+     * Prometheus / Loki / Tempo tools — primary demo endpoint for the POC.
+     */
+    @PostMapping("/monitoring/explain")
+    public Map<String, Object> monitoringExplain(@Valid @RequestBody(required = false) MonitoringExplainRequest request) {
+        MonitoringExplainRequest body = request == null ? new MonitoringExplainRequest() : request;
+        Map<String, Object> snap = monitoringSnapshotService.snapshot();
+        String prompt = monitoringSnapshotService.buildExplainPrompt(
+            body.getFocus(), body.getMessage(), snap);
+
+        Incident incident = new Incident();
+        incident.setSource("command-center");
+        incident.setTitle(shortTitle("Command Center: "
+            + (body.getFocus() == null || body.getFocus().isBlank() ? "overview" : body.getFocus())));
+        incident.setSummary(prompt);
+        incident.setCategory("monitoring");
+        incident.setSeverity(parseOverallSeverity(snap));
+        incident.getEvidence().put("monitoringSnapshot", snap);
+        incidentStore.save(incident);
+
+        opsAgentMetrics.recordIncidentCreated(incident.getSource(),
+                incident.getSeverity() != null ? incident.getSeverity().name() : null,
+                incident.getCategory());
+
+        incident = investigationService.investigate(incident.getId());
+
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("incidentId", incident.getId());
+        response.put("status", incident.getStatus());
+        response.put("overallStatus", snap.get("overallStatus"));
+        response.put("focus", body.getFocus() == null || body.getFocus().isBlank() ? "overview" : body.getFocus());
+        response.put("reply", incident.getReportMarkdown() != null
+            ? incident.getReportMarkdown()
+            : incident.getRootCauseHypothesis());
+        response.put("mitigations", incident.getMitigations());
+        response.put("snapshotSummary", snap.get("summary"));
+        response.put("signals", snap.get("signals"));
+        return response;
+    }
+
     @PostMapping("/chat")
     public Map<String, Object> chat(@Valid @RequestBody ChatRequest request) {
         Incident incident;
@@ -206,6 +264,17 @@ public class AgentController {
         } catch (IllegalArgumentException ex) {
             return Incident.Severity.WARNING;
         }
+    }
+
+    private Incident.Severity parseOverallSeverity(Map<String, Object> snap) {
+        Object overall = snap.get("overallStatus");
+        if ("CRITICAL".equals(overall)) {
+            return Incident.Severity.CRITICAL;
+        }
+        if ("DEGRADED".equals(overall)) {
+            return Incident.Severity.WARNING;
+        }
+        return Incident.Severity.INFO;
     }
 
     private String shortTitle(String message) {

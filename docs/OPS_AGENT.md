@@ -20,6 +20,8 @@ with mitigation playbooks.
 4. **Proposes mitigation playbooks** for service-down, circuit-breaker-open,
    high-error-rate / latency, and generic degradation
 5. **Reports** markdown incident summaries via API and a lightweight console UI
+6. **Command Center POC** (`/command-center.html`) — live cards for health,
+   slow endpoints, JVM/GC, Tempo traces, and alerts, with one-click LLM explain
 
 ## Install into this platform
 
@@ -29,7 +31,8 @@ Already wired in `docker-compose.yml`. Start the stack:
 docker-compose up -d --build
 ```
 
-Ops agent console: http://localhost:8085
+Ops agent console: http://localhost:8085  
+Command Center POC: http://localhost:8085/command-center.html
 
 ### Enable a real LLM (optional)
 
@@ -60,9 +63,12 @@ Treat `ops-agent` as a sidecar/plugin:
 
 | Method | Path | Purpose |
 |---|---|---|
-| GET | `/` | Operator console UI |
+| GET | `/` | Operator console UI (incidents) |
+| GET | `/command-center.html` | **Command Center POC** — live metrics cards + LLM explain |
 | GET | `/api/agent/health-summary` | Engine status + tool catalog |
 | GET | `/api/agent/tools` | Tool schemas for LLM/MCP-style clients |
+| GET | `/api/agent/monitoring/snapshot` | Live health / endpoints / JVM / traces / alerts snapshot |
+| POST | `/api/agent/monitoring/explain` | LLM (or heuristic) briefing over the live snapshot |
 | POST | `/api/agent/investigate` | Start async investigation |
 | POST | `/api/agent/chat` | Sync investigate from natural language |
 | GET | `/api/agent/incidents` | List incidents |
@@ -70,6 +76,24 @@ Treat `ops-agent` as a sidecar/plugin:
 | GET | `/api/agent/incidents/{id}/report` | Markdown/JSON report |
 | POST | `/api/agent/incidents/{id}/mitigations/{actionId}/approve` | Approve a mitigation step |
 | POST | `/api/agent/webhooks/alertmanager` | Alertmanager webhook receiver |
+
+### Command Center POC
+
+Open http://localhost:8085/command-center.html after the stack is up. The page:
+
+1. Polls `GET /api/agent/monitoring/snapshot` (Prometheus RED + JVM/GC, Tempo slow traces, Loki ERROR lines, firing alerts)
+2. Surfaces warning/critical signals and suggested prompts
+3. Calls `POST /api/agent/monitoring/explain` so the ops-agent investigates with the same tools used for incidents
+
+```bash
+# Live snapshot cards
+curl -s http://localhost:8085/api/agent/monitoring/snapshot | jq '.overallStatus, .summary, .slowestEndpoints[:3]'
+
+# Ask the agent to brief the platform (heuristic works offline; set LLM_ENABLED for real LLM)
+curl -s http://localhost:8085/api/agent/monitoring/explain \
+  -H 'Content-Type: application/json' \
+  -d '{"focus":"endpoints","message":"Which APIs are slowest and why?"}' | jq '.reply'
+```
 
 ### Example: chat investigation
 

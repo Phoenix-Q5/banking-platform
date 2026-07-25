@@ -16,7 +16,7 @@ RUN mvn -q -pl notification-service -am dependency:go-offline -DskipTests || tru
 COPY banking-events banking-events
 COPY notification-service notification-service
 RUN mvn -q -pl notification-service -am clean package -DskipTests
-FROM eclipse-temurin:17-jre-alpine
+FROM eclipse-temurin:17-jre-jammy
 WORKDIR /app
 COPY --from=build /workspace/notification-service/target/*.jar app.jar
 EXPOSE 8087

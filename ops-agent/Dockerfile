@@ -19,7 +19,7 @@ RUN mvn -q -pl ops-agent -am dependency:go-offline -DskipTests || true
 COPY ops-agent ops-agent
 RUN mvn -q -pl ops-agent -am clean package -DskipTests
 
-FROM eclipse-temurin:17-jre-alpine
+FROM eclipse-temurin:17-jre-jammy
 WORKDIR /app
 COPY --from=build /workspace/ops-agent/target/*.jar app.jar
 EXPOSE 8085

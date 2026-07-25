@@ -16,7 +16,7 @@ RUN mvn -q -pl customer-service -am dependency:go-offline -DskipTests || true
 COPY banking-events banking-events
 COPY customer-service customer-service
 RUN mvn -q -pl customer-service -am clean package -DskipTests
-FROM eclipse-temurin:17-jre-alpine
+FROM eclipse-temurin:17-jre-jammy
 WORKDIR /app
 COPY --from=build /workspace/customer-service/target/*.jar app.jar
 EXPOSE 8083

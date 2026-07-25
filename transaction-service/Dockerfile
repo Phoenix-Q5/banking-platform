@@ -20,7 +20,7 @@ COPY banking-events banking-events
 COPY transaction-service transaction-service
 RUN mvn -q -pl transaction-service -am clean package -DskipTests
 
-FROM eclipse-temurin:17-jre-alpine
+FROM eclipse-temurin:17-jre-jammy
 WORKDIR /app
 COPY --from=build /workspace/transaction-service/target/*.jar app.jar
 EXPOSE 8080

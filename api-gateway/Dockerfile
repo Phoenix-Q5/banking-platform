@@ -19,7 +19,7 @@ RUN mvn -q -pl api-gateway -am dependency:go-offline -DskipTests || true
 COPY api-gateway api-gateway
 RUN mvn -q -pl api-gateway -am clean package -DskipTests
 
-FROM eclipse-temurin:17-jre-alpine
+FROM eclipse-temurin:17-jre-jammy
 WORKDIR /app
 COPY --from=build /workspace/api-gateway/target/*.jar app.jar
 EXPOSE 8080

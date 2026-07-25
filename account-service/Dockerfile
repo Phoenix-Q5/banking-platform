@@ -20,7 +20,7 @@ COPY banking-events banking-events
 COPY account-service account-service
 RUN mvn -q -pl account-service -am clean package -DskipTests
 
-FROM eclipse-temurin:17-jre-alpine
+FROM eclipse-temurin:17-jre-jammy
 WORKDIR /app
 COPY --from=build /workspace/account-service/target/*.jar app.jar
 EXPOSE 8080
