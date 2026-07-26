@@ -6,159 +6,193 @@
   <title>Ops Agent Command Center</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
   <style>
     :root {
-      --ink: #10233a;
-      --muted: #5b6b7c;
-      --paper: #f3f6f9;
-      --panel: rgba(255, 255, 255, 0.84);
-      --line: #d5dee8;
-      --accent: #0b6e4f;
-      --accent-2: #1c4d7a;
-      --warn: #9a5b00;
-      --crit: #9b1d2d;
-      --ok: #0b6e4f;
-      --shadow: 0 18px 50px rgba(16, 35, 58, 0.08);
+      --bg: #0b1220;
+      --bg-2: #111a2b;
+      --panel: #151f33;
+      --panel-2: #1a253b;
+      --ink: #e8eef7;
+      --muted: #8b9bb0;
+      --line: #2a3a55;
+      --accent: #2dd4a8;
+      --accent-2: #5b9fd4;
+      --warn: #e6a23c;
+      --crit: #f07178;
+      --ok: #2dd4a8;
+      --shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+      --mono: "JetBrains Mono", ui-monospace, monospace;
     }
     * { box-sizing: border-box; }
     body {
       margin: 0; min-height: 100vh; color: var(--ink);
       font-family: "IBM Plex Sans", sans-serif;
       background:
-        radial-gradient(1200px 600px at 8% -12%, rgba(28, 77, 122, 0.16), transparent 60%),
-        radial-gradient(900px 500px at 100% 0%, rgba(11, 110, 79, 0.12), transparent 55%),
-        linear-gradient(180deg, #e8eef5 0%, var(--paper) 45%, #eef3f7 100%);
+        radial-gradient(1000px 500px at 0% -10%, rgba(45, 212, 168, 0.08), transparent 55%),
+        radial-gradient(900px 480px at 100% 0%, rgba(91, 159, 212, 0.10), transparent 50%),
+        linear-gradient(180deg, #0a101c 0%, var(--bg) 40%, #0d1524 100%);
     }
-    .shell { max-width: 1400px; margin: 0 auto; padding: 24px 18px 48px; }
-    header { display: grid; gap: 10px; margin-bottom: 18px; }
-    .brand-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: baseline; justify-content: space-between; }
+    .shell { max-width: 1480px; margin: 0 auto; padding: 20px 16px 40px; }
+    header { display: grid; gap: 10px; margin-bottom: 16px; }
+    .brand-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; }
     .brand {
-      font-family: "Source Serif 4", Georgia, serif;
-      font-size: clamp(1.7rem, 3.5vw, 2.35rem);
-      font-weight: 700; letter-spacing: -0.02em; line-height: 1.05;
+      font-size: clamp(1.35rem, 2.8vw, 1.85rem);
+      font-weight: 700; letter-spacing: -0.02em;
+      display: flex; align-items: center; gap: 10px;
     }
-    .nav { display: flex; gap: 8px; flex-wrap: wrap; }
+    .live-dot {
+      width: 9px; height: 9px; border-radius: 50%; background: var(--accent);
+      box-shadow: 0 0 0 0 rgba(45, 212, 168, 0.55);
+      animation: pulse 1.6s infinite;
+    }
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(45, 212, 168, 0.5); }
+      70% { box-shadow: 0 0 0 10px rgba(45, 212, 168, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(45, 212, 168, 0); }
+    }
+    .nav { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
     .nav a {
-      text-decoration: none; color: var(--accent-2);
-      border: 1px solid var(--line); background: #fff;
-      padding: 6px 12px; font-size: 0.88rem; font-weight: 550;
+      text-decoration: none; color: var(--muted);
+      border: 1px solid var(--line); background: var(--panel);
+      padding: 6px 12px; font-size: 0.86rem; font-weight: 550;
     }
-    .nav a.current { background: var(--accent-2); color: #fff; border-color: var(--accent-2); }
-    .tagline { max-width: 52rem; color: var(--muted); margin: 0; line-height: 1.5; }
-    .meta { display: flex; flex-wrap: wrap; gap: 8px 16px; color: var(--muted); font-size: 0.88rem; align-items: center; }
-    .meta strong { color: var(--ink); }
+    .nav a.current { color: var(--bg); background: var(--accent); border-color: var(--accent); }
+    .tagline { max-width: 56rem; color: var(--muted); margin: 0; line-height: 1.45; font-size: 0.94rem; }
+    .meta {
+      display: flex; flex-wrap: wrap; gap: 8px 14px; color: var(--muted);
+      font-size: 0.84rem; align-items: center; font-family: var(--mono);
+    }
+    .meta strong { color: var(--ink); font-weight: 500; }
     .panel {
-      background: var(--panel); backdrop-filter: blur(10px);
-      border: 1px solid rgba(213, 222, 232, 0.9); box-shadow: var(--shadow);
-      border-radius: 4px; padding: 16px; margin-bottom: 14px;
+      background: linear-gradient(180deg, var(--panel) 0%, var(--panel-2) 100%);
+      border: 1px solid var(--line); box-shadow: var(--shadow);
+      border-radius: 8px; padding: 14px; margin-bottom: 12px;
     }
     h2 {
-      margin: 0 0 12px; font-size: 0.76rem; letter-spacing: 0.12em;
+      margin: 0 0 12px; font-size: 0.72rem; letter-spacing: 0.14em;
       text-transform: uppercase; color: var(--accent-2); font-weight: 600;
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
     }
     .stats {
-      display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; margin-bottom: 14px;
+      display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; margin-bottom: 12px;
     }
     @media (max-width: 1100px) { .stats { grid-template-columns: repeat(3, 1fr); } }
     @media (max-width: 640px) { .stats { grid-template-columns: repeat(2, 1fr); } }
     .stat {
-      background: var(--panel); border: 1px solid var(--line); box-shadow: var(--shadow);
-      padding: 14px 12px; border-radius: 4px; min-height: 88px;
+      background: var(--panel); border: 1px solid var(--line); border-radius: 8px;
+      padding: 12px; min-height: 84px; position: relative; overflow: hidden;
     }
-    .stat .label { font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
-    .stat .value { font-size: 1.55rem; font-weight: 600; margin-top: 6px; line-height: 1.1; }
-    .stat .hint { font-size: 0.8rem; color: var(--muted); margin-top: 4px; }
+    .stat::after {
+      content: ""; position: absolute; inset: auto 0 0 0; height: 2px;
+      background: var(--accent-2); opacity: 0.55;
+    }
+    .stat.HEALTHY::after, .stat.ok::after { background: var(--ok); }
+    .stat.DEGRADED::after, .stat.warn::after { background: var(--warn); }
+    .stat.CRITICAL::after, .stat.crit::after { background: var(--crit); }
+    .stat .label { font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+    .stat .value { font-size: 1.45rem; font-weight: 700; margin-top: 6px; font-family: var(--mono); }
+    .stat .hint { font-size: 0.76rem; color: var(--muted); margin-top: 4px; }
     .stat.HEALTHY .value, .stat.ok .value { color: var(--ok); }
     .stat.DEGRADED .value, .stat.warn .value { color: var(--warn); }
     .stat.CRITICAL .value, .stat.crit .value { color: var(--crit); }
-    .layout { display: grid; grid-template-columns: 1.35fr 0.95fr; gap: 14px; align-items: start; }
-    @media (max-width: 1080px) { .layout { grid-template-columns: 1fr; } }
-    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-    @media (max-width: 820px) { .grid-2 { grid-template-columns: 1fr; } }
-    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
-    th, td { text-align: left; padding: 7px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
-    th { color: var(--muted); font-weight: 550; font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; }
-    tr.clickable { cursor: pointer; }
-    tr.clickable:hover { background: rgba(28, 77, 122, 0.05); }
-    .badge {
-      display: inline-block; font-size: 0.68rem; letter-spacing: 0.04em; text-transform: uppercase;
-      padding: 2px 7px; border: 1px solid var(--line); margin-right: 4px; color: var(--muted);
+    .layout { display: grid; grid-template-columns: 1.4fr 0.9fr; gap: 12px; align-items: start; }
+    @media (max-width: 1100px) { .layout { grid-template-columns: 1fr; } }
+    .charts {
+      display: grid; grid-template-columns: 1.2fr 0.8fr 0.8fr; gap: 12px; margin-bottom: 12px;
     }
-    .badge.CRITICAL, .badge.DOWN { color: var(--crit); border-color: rgba(155, 29, 45, 0.4); }
-    .badge.WARNING, .badge.DEGRADED { color: var(--warn); border-color: rgba(154, 91, 0, 0.4); }
-    .badge.HEALTHY, .badge.UP, .badge.INFO { color: var(--ok); border-color: rgba(11, 110, 79, 0.4); }
-    .muted { color: var(--muted); font-size: 0.86rem; }
-    .empty { color: var(--muted); padding: 6px 0; }
+    @media (max-width: 1100px) { .charts { grid-template-columns: 1fr; } }
+    .chart-wrap { position: relative; height: 240px; }
+    .chart-wrap.tall { height: 280px; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    @media (max-width: 820px) { .grid-2 { grid-template-columns: 1fr; } }
+    table { width: 100%; border-collapse: collapse; font-size: 0.84rem; }
+    th, td { text-align: left; padding: 7px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
+    th { color: var(--muted); font-weight: 550; font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase; }
+    tr.clickable { cursor: pointer; }
+    tr.clickable:hover { background: rgba(91, 159, 212, 0.08); }
+    code, .mono { font-family: var(--mono); font-size: 0.8rem; }
+    .badge {
+      display: inline-block; font-size: 0.66rem; letter-spacing: 0.05em; text-transform: uppercase;
+      padding: 2px 7px; border: 1px solid var(--line); margin-right: 4px; color: var(--muted); border-radius: 3px;
+    }
+    .badge.CRITICAL, .badge.DOWN { color: var(--crit); border-color: rgba(240, 113, 120, 0.45); background: rgba(240, 113, 120, 0.1); }
+    .badge.WARNING, .badge.DEGRADED { color: var(--warn); border-color: rgba(230, 162, 60, 0.45); background: rgba(230, 162, 60, 0.1); }
+    .badge.HEALTHY, .badge.UP, .badge.INFO { color: var(--ok); border-color: rgba(45, 212, 168, 0.45); background: rgba(45, 212, 168, 0.1); }
+    .muted { color: var(--muted); font-size: 0.84rem; }
+    .empty { color: var(--muted); padding: 8px 0; }
     .bar {
-      height: 6px; background: #e4ebf2; border-radius: 2px; overflow: hidden; margin-top: 4px; min-width: 72px;
+      height: 5px; background: #24324a; border-radius: 2px; overflow: hidden; margin-top: 4px; min-width: 64px;
     }
     .bar > span { display: block; height: 100%; background: var(--accent-2); }
     .bar.warn > span { background: var(--warn); }
     .bar.crit > span { background: var(--crit); }
     .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
     .chip {
-      border: 1px solid var(--line); background: #fff; color: var(--accent-2);
-      padding: 6px 10px; font-size: 0.82rem; cursor: pointer; text-align: left; max-width: 100%;
+      border: 1px solid var(--line); background: var(--bg-2); color: var(--accent-2);
+      padding: 6px 10px; font-size: 0.8rem; cursor: pointer; text-align: left; border-radius: 4px;
     }
-    .chip:hover { border-color: var(--accent-2); }
+    .chip:hover { border-color: var(--accent-2); color: var(--ink); }
     textarea, button, input, select { font: inherit; }
     textarea {
-      width: 100%; min-height: 78px; resize: vertical; border: 1px solid var(--line);
-      background: #fff; color: var(--ink); padding: 10px 12px; border-radius: 2px;
+      width: 100%; min-height: 74px; resize: vertical; border: 1px solid var(--line);
+      background: var(--bg-2); color: var(--ink); padding: 10px 12px; border-radius: 4px;
     }
     .row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; align-items: center; }
     button {
-      border: 0; background: var(--accent); color: #fff; padding: 8px 14px;
-      border-radius: 2px; cursor: pointer; font-weight: 550;
+      border: 0; background: var(--accent); color: #06261c; padding: 8px 14px;
+      border-radius: 4px; cursor: pointer; font-weight: 650;
     }
-    button.secondary { background: transparent; color: var(--accent-2); border: 1px solid var(--line); }
-    button:disabled { opacity: 0.55; cursor: wait; }
-    select {
-      border: 1px solid var(--line); background: #fff; color: var(--ink);
-      padding: 8px 10px; border-radius: 2px;
+    button.secondary {
+      background: transparent; color: var(--accent-2); border: 1px solid var(--line);
+    }
+    button:disabled { opacity: 0.5; cursor: wait; }
+    select, input[type="text"], input[type="password"] {
+      border: 1px solid var(--line); background: var(--bg-2); color: var(--ink);
+      padding: 8px 10px; border-radius: 4px;
     }
     .reply {
-      margin-top: 12px; white-space: pre-wrap; line-height: 1.55; font-size: 0.92rem;
-      border-top: 1px solid var(--line); padding-top: 12px; max-height: 420px; overflow: auto;
+      margin-top: 12px; white-space: pre-wrap; line-height: 1.55; font-size: 0.9rem;
+      border-top: 1px solid var(--line); padding-top: 12px; max-height: 380px; overflow: auto;
+      color: #c9d4e4; font-family: var(--mono); font-size: 0.8rem;
     }
     .signal {
-      border: 1px solid var(--line); background: #fff; padding: 8px 10px; margin-bottom: 8px; font-size: 0.9rem;
+      border: 1px solid var(--line); background: var(--bg-2); padding: 8px 10px;
+      margin-bottom: 8px; font-size: 0.88rem; border-radius: 4px;
     }
     .logline {
-      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-      font-size: 0.78rem; border-bottom: 1px dashed var(--line); padding: 5px 0; word-break: break-word;
+      font-family: var(--mono); font-size: 0.74rem; border-bottom: 1px dashed var(--line);
+      padding: 5px 0; word-break: break-word; color: #c6d0de;
     }
     .toast {
       position: fixed; right: 18px; bottom: 18px; max-width: 380px;
-      background: var(--ink); color: #fff; padding: 12px 16px; border-radius: 3px;
-      font-size: 0.9rem; opacity: 0; transition: opacity 0.25s; pointer-events: none; white-space: pre-wrap;
+      background: #1e2d48; color: #fff; padding: 12px 16px; border-radius: 6px;
+      border: 1px solid var(--line); font-size: 0.88rem; opacity: 0;
+      transition: opacity 0.25s; pointer-events: none; white-space: pre-wrap;
     }
-    .toast.show { opacity: 0.96; }
-    .toast.error { background: var(--crit); }
+    .toast.show { opacity: 0.98; }
+    .toast.error { background: #3a1a22; border-color: rgba(240, 113, 120, 0.5); }
     #loginBar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-    .userchip { border: 1px solid var(--line); padding: 4px 10px; background: #fff; font-size: 0.88rem; }
-    input[type="text"], input[type="password"] {
-      border: 1px solid var(--line); background: #fff; color: var(--ink);
-      padding: 8px 10px; border-radius: 2px;
-    }
+    .userchip { border: 1px solid var(--line); padding: 4px 10px; background: var(--panel); font-size: 0.86rem; border-radius: 4px; }
+    .poll-hint { color: var(--muted); font-size: 0.72rem; font-weight: 500; letter-spacing: 0.04em; }
   </style>
 </head>
 <body>
   <div class="shell">
     <header>
       <div class="brand-row">
-        <div class="brand">Ops Agent Command Center</div>
+        <div class="brand"><span class="live-dot" title="Live"></span> Ops Agent Command Center</div>
         <nav class="nav">
           <a class="current" href="/command-center.html">Command Center</a>
           <a href="/">Incidents Console</a>
         </nav>
       </div>
       <p class="tagline">
-        Live metrics, alerts, JVM health, slow endpoints, and Tempo traces — explained by the same
-        ops-agent tools that investigate incidents (Prometheus, Loki, Tempo).
+        Realtime platform telemetry — bar &amp; pie views for latency, heap, health, and traffic —
+        explained by the ops-agent (Prometheus · Loki · Tempo).
       </p>
-      <div class="meta" id="meta"><span>Loading snapshot…</span></div>
+      <div class="meta" id="meta"><span>Connecting to live snapshot…</span></div>
       <div id="loginBar" hidden>
         <input type="text" id="loginUser" placeholder="username (e.g. demo.admin)" autocomplete="username" />
         <input type="password" id="loginPass" placeholder="password" autocomplete="current-password" />
@@ -171,6 +205,36 @@
     </header>
 
     <div class="stats" id="stats"></div>
+
+    <div class="charts">
+      <section class="panel">
+        <h2>Latency by service (p95 ms) <span class="poll-hint">LIVE</span></h2>
+        <div class="chart-wrap tall"><canvas id="latencyBar"></canvas></div>
+      </section>
+      <section class="panel">
+        <h2>Service health <span class="poll-hint">PIE</span></h2>
+        <div class="chart-wrap"><canvas id="healthPie"></canvas></div>
+      </section>
+      <section class="panel">
+        <h2>Signal mix <span class="poll-hint">PIE</span></h2>
+        <div class="chart-wrap"><canvas id="signalPie"></canvas></div>
+      </section>
+    </div>
+
+    <div class="charts" style="grid-template-columns: 1fr 1fr 1fr;">
+      <section class="panel">
+        <h2>Heap used % <span class="poll-hint">BAR</span></h2>
+        <div class="chart-wrap"><canvas id="heapBar"></canvas></div>
+      </section>
+      <section class="panel">
+        <h2>Error rate % (5xx) <span class="poll-hint">BAR</span></h2>
+        <div class="chart-wrap"><canvas id="errorBar"></canvas></div>
+      </section>
+      <section class="panel">
+        <h2>Traffic share (RPS) <span class="poll-hint">PIE</span></h2>
+        <div class="chart-wrap"><canvas id="trafficPie"></canvas></div>
+      </section>
+    </div>
 
     <div class="layout">
       <div>
@@ -191,7 +255,7 @@
         </div>
 
         <section class="panel">
-          <h2>Service health · latency · JVM</h2>
+          <h2>Service detail</h2>
           <div id="services" class="empty">Loading…</div>
         </section>
 
@@ -222,7 +286,7 @@
               <option value="alerts">Alerts</option>
               <option value="health">Service health</option>
             </select>
-            <button class="secondary" id="refreshBtn">Refresh snapshot</button>
+            <button class="secondary" id="refreshBtn">Refresh now</button>
           </div>
           <textarea id="prompt" placeholder="Optional: dig into a specific service, endpoint, or alert…"></textarea>
           <div class="row">
@@ -244,12 +308,30 @@
 
   <script>
     const $ = id => document.getElementById(id);
+    const POLL_MS = 5000;
+    const COLORS = {
+      teal: '#2dd4a8',
+      blue: '#5b9fd4',
+      warn: '#e6a23c',
+      crit: '#f07178',
+      muted: '#6b7c93',
+      ink: '#e8eef7',
+      grid: 'rgba(42, 58, 85, 0.7)',
+      palette: ['#2dd4a8', '#5b9fd4', '#e6a23c', '#f07178', '#9b8cff', '#4fd1c5', '#f6ad55', '#63b3ed', '#fc8181', '#68d391']
+    };
+
+    Chart.defaults.color = COLORS.muted;
+    Chart.defaults.borderColor = COLORS.grid;
+    Chart.defaults.font.family = '"IBM Plex Sans", sans-serif';
+
     let state = {
       securityEnabled: false,
       keycloakTokenUrl: null,
       token: sessionStorage.getItem('ops_token') || null,
       user: sessionStorage.getItem('ops_user') || null,
       snapshot: null,
+      charts: {},
+      pollTimer: null,
     };
 
     function toast(message, isError) {
@@ -364,6 +446,175 @@
       return `<div class="bar ${cls}" title="${pct}%"><span style="width:${pct}%"></span></div>`;
     }
 
+    function shortService(name) {
+      return String(name || '').replace(/-service$/, '').replace('api-gateway', 'gateway');
+    }
+
+    function upsertChart(key, canvasId, config) {
+      const canvas = $(canvasId);
+      if (!canvas) return;
+      if (state.charts[key]) {
+        const chart = state.charts[key];
+        chart.data = config.data;
+        if (config.options) chart.options = Object.assign(chart.options || {}, config.options);
+        chart.update('none');
+        return;
+      }
+      state.charts[key] = new Chart(canvas, config);
+    }
+
+    function commonBarOptions(yTitle) {
+      return {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: { duration: 450 },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#1a253b',
+            borderColor: '#2a3a55',
+            borderWidth: 1,
+            titleColor: COLORS.ink,
+            bodyColor: COLORS.ink
+          }
+        },
+        scales: {
+          x: {
+            ticks: { color: COLORS.muted, maxRotation: 45, minRotation: 0, font: { size: 10 } },
+            grid: { color: 'transparent' }
+          },
+          y: {
+            beginAtZero: true,
+            title: { display: !!yTitle, text: yTitle, color: COLORS.muted },
+            ticks: { color: COLORS.muted },
+            grid: { color: COLORS.grid }
+          }
+        }
+      };
+    }
+
+    function commonPieOptions() {
+      return {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: { duration: 450 },
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: { color: COLORS.muted, boxWidth: 10, font: { size: 11 } }
+          },
+          tooltip: {
+            backgroundColor: '#1a253b',
+            borderColor: '#2a3a55',
+            borderWidth: 1
+          }
+        }
+      };
+    }
+
+    function updateCharts(snap) {
+      const services = (snap.services || []).slice().sort((a, b) => String(a.name).localeCompare(String(b.name)));
+      const labels = services.map(s => shortService(s.name));
+      const p95 = services.map(s => Number(s.p95Ms) || 0);
+      const heapPct = services.map(s => Math.round((Number(s.heapUsedRatio) || 0) * 1000) / 10);
+      const errPct = services.map(s => Number(s.errorRatePct) || 0);
+      const rps = services.map(s => Number(s.rps) || 0);
+      const upCount = services.filter(s => s.up).length;
+      const downCount = services.length - upCount;
+      const summary = snap.summary || {};
+      const crit = Number(summary.criticalSignals) || 0;
+      const warn = Number(summary.warningSignals) || 0;
+      const healthySignals = Math.max(0, services.length - crit - warn);
+
+      upsertChart('latencyBar', 'latencyBar', {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [{
+            data: p95,
+            backgroundColor: p95.map(v => v >= 1000 ? COLORS.crit : v >= 400 ? COLORS.warn : COLORS.blue),
+            borderRadius: 3,
+            maxBarThickness: 28
+          }]
+        },
+        options: commonBarOptions('ms')
+      });
+
+      upsertChart('heapBar', 'heapBar', {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [{
+            data: heapPct,
+            backgroundColor: heapPct.map(v => v >= 85 ? COLORS.crit : v >= 70 ? COLORS.warn : COLORS.teal),
+            borderRadius: 3,
+            maxBarThickness: 28
+          }]
+        },
+        options: commonBarOptions('%')
+      });
+
+      upsertChart('errorBar', 'errorBar', {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [{
+            data: errPct,
+            backgroundColor: errPct.map(v => v >= 5 ? COLORS.crit : v >= 1 ? COLORS.warn : COLORS.teal),
+            borderRadius: 3,
+            maxBarThickness: 28
+          }]
+        },
+        options: commonBarOptions('%')
+      });
+
+      upsertChart('healthPie', 'healthPie', {
+        type: 'doughnut',
+        data: {
+          labels: ['Up', 'Down'],
+          datasets: [{
+            data: [upCount, downCount],
+            backgroundColor: [COLORS.teal, COLORS.crit],
+            borderColor: '#151f33',
+            borderWidth: 2
+          }]
+        },
+        options: commonPieOptions()
+      });
+
+      upsertChart('signalPie', 'signalPie', {
+        type: 'doughnut',
+        data: {
+          labels: ['Healthy', 'Warning', 'Critical'],
+          datasets: [{
+            data: [healthySignals || (crit + warn === 0 ? 1 : 0), warn, crit],
+            backgroundColor: [COLORS.teal, COLORS.warn, COLORS.crit],
+            borderColor: '#151f33',
+            borderWidth: 2
+          }]
+        },
+        options: commonPieOptions()
+      });
+
+      const trafficLabels = labels.filter((_, i) => rps[i] > 0);
+      const trafficData = rps.filter(v => v > 0);
+      upsertChart('trafficPie', 'trafficPie', {
+        type: 'pie',
+        data: {
+          labels: trafficLabels.length ? trafficLabels : ['no traffic'],
+          datasets: [{
+            data: trafficData.length ? trafficData : [1],
+            backgroundColor: trafficLabels.length
+              ? trafficLabels.map((_, i) => COLORS.palette[i % COLORS.palette.length])
+              : [COLORS.muted],
+            borderColor: '#151f33',
+            borderWidth: 2
+          }]
+        },
+        options: commonPieOptions()
+      });
+    }
+
     function renderSnapshot(snap) {
       state.snapshot = snap;
       const summary = snap.summary || {};
@@ -371,19 +622,21 @@
       $('meta').innerHTML = `
         <span><strong>Platform</strong> ${escapeHtml(snap.platform)}</span>
         <span><strong>Engine</strong> ${escapeHtml(snap.engine || '—')}</span>
-        <span><strong>LLM</strong> ${snap.llmEnabled ? 'enabled' : 'heuristic fallback'}</span>
+        <span><strong>LLM</strong> ${snap.llmEnabled ? 'enabled' : 'heuristic'}</span>
         <span><strong>Status</strong> <span class="badge ${overall}">${overall}</span></span>
-        <span><strong>Updated</strong> ${escapeHtml(fmtTime(snap.generatedAt))}</span>
+        <span><strong>Live</strong> ${escapeHtml(fmtTime(snap.generatedAt))} · poll ${POLL_MS / 1000}s</span>
       `;
 
       $('stats').innerHTML = `
         <div class="stat ${overall}"><div class="label">Overall</div><div class="value">${escapeHtml(overall)}</div><div class="hint">live snapshot</div></div>
         <div class="stat ${(summary.servicesUp === summary.servicesTotal) ? 'ok' : 'crit'}"><div class="label">Services up</div><div class="value">${summary.servicesUp ?? 0}/${summary.servicesTotal ?? 0}</div><div class="hint">Prometheus targets</div></div>
-        <div class="stat ${(summary.criticalSignals || 0) > 0 ? 'crit' : (summary.warningSignals || 0) > 0 ? 'warn' : 'ok'}"><div class="label">Signals</div><div class="value">${(summary.criticalSignals || 0) + (summary.warningSignals || 0)}</div><div class="hint">${summary.criticalSignals || 0} critical · ${summary.warningSignals || 0} warning</div></div>
+        <div class="stat ${(summary.criticalSignals || 0) > 0 ? 'crit' : (summary.warningSignals || 0) > 0 ? 'warn' : 'ok'}"><div class="label">Signals</div><div class="value">${(summary.criticalSignals || 0) + (summary.warningSignals || 0)}</div><div class="hint">${summary.criticalSignals || 0} crit · ${summary.warningSignals || 0} warn</div></div>
         <div class="stat ${(summary.firingAlerts || 0) > 0 ? 'warn' : 'ok'}"><div class="label">Alerts</div><div class="value">${summary.firingAlerts || 0}</div><div class="hint">firing</div></div>
         <div class="stat"><div class="label">Slow APIs</div><div class="value">${summary.slowEndpoints || 0}</div><div class="hint">endpoint rows</div></div>
-        <div class="stat"><div class="label">Slow traces</div><div class="value">${summary.slowTraces || 0}</div><div class="hint">Tempo search</div></div>
+        <div class="stat"><div class="label">Slow traces</div><div class="value">${summary.slowTraces || 0}</div><div class="hint">Tempo</div></div>
       `;
+
+      updateCharts(snap);
 
       const signals = snap.signals || [];
       $('signals').innerHTML = signals.length ? signals.map(s => `
@@ -403,7 +656,7 @@
             ${endpoints.map(e => `
               <tr class="clickable suggest-row" data-prompt="Explain why ${e.method || ''} ${e.uri || ''} on ${e.job || ''} is slow using metrics and Tempo traces">
                 <td>${escapeHtml(e.job)}</td>
-                <td><code>${escapeHtml(e.method)} ${escapeHtml(e.uri)}</code></td>
+                <td class="mono">${escapeHtml(e.method)} ${escapeHtml(e.uri)}</td>
                 <td><strong>${escapeHtml(e.avgLatencyMs)}</strong></td>
                 <td>${escapeHtml(e.rps)}</td>
               </tr>`).join('')}
@@ -418,7 +671,7 @@
             ${traces.map(t => `
               <tr class="clickable suggest-row" data-prompt="Analyze Tempo trace ${t.traceID} for ${t.service}">
                 <td>${escapeHtml(t.service)}</td>
-                <td><code>${escapeHtml((t.rootTraceName || t.traceID || '').toString().slice(0, 42))}</code>
+                <td class="mono">${escapeHtml((t.rootTraceName || t.traceID || '').toString().slice(0, 42))}
                   <div class="muted">${escapeHtml((t.traceID || '').toString().slice(0, 16))}…</div></td>
                 <td><strong>${escapeHtml(t.durationMs)}</strong></td>
               </tr>`).join('')}
@@ -434,12 +687,12 @@
               <tr class="clickable suggest-row" data-prompt="Investigate health, latency, heap and GC for ${s.name}">
                 <td>${escapeHtml(s.name)}</td>
                 <td><span class="badge ${s.up ? 'UP' : 'DOWN'}">${s.up ? 'UP' : 'DOWN'}</span></td>
-                <td>${escapeHtml(s.p95Ms ?? '—')} ms</td>
-                <td>${escapeHtml(s.errorRatePct ?? 0)}</td>
+                <td class="mono">${escapeHtml(s.p95Ms ?? '—')}</td>
+                <td class="mono">${escapeHtml(s.errorRatePct ?? 0)}</td>
                 <td>${Math.round((s.heapUsedRatio || 0) * 100)}% ${heapBar(s.heapUsedRatio)}
                   <div class="muted">${fmtBytes(s.heapUsedBytes)} / ${fmtBytes(s.heapMaxBytes)}</div></td>
-                <td>${escapeHtml(s.gcPauseSecondsPerSec ?? 0)}</td>
-                <td>${escapeHtml(s.cpuUsage ?? 0)}</td>
+                <td class="mono">${escapeHtml(s.gcPauseSecondsPerSec ?? 0)}</td>
+                <td class="mono">${escapeHtml(s.cpuUsage ?? 0)}</td>
               </tr>`).join('')}
           </tbody>
         </table>` : '<div class="empty">No service metrics.</div>';
@@ -474,13 +727,15 @@
       });
     }
 
-    async function loadSnapshot() {
+    async function loadSnapshot(silent) {
       try {
         const snap = await api('/api/agent/monitoring/snapshot');
         renderSnapshot(snap);
       } catch (e) {
-        $('meta').innerHTML = `<span class="badge CRITICAL">error</span> ${escapeHtml(e.message)}`;
-        toast(e.message, true);
+        if (!silent) {
+          $('meta').innerHTML = `<span class="badge CRITICAL">error</span> ${escapeHtml(e.message)}`;
+          toast(e.message, true);
+        }
       }
     }
 
@@ -498,7 +753,7 @@
         if (data.incidentId) text += `\n\n— incident ${data.incidentId}`;
         $('reply').textContent = text;
         toast('Investigation complete' + (data.incidentId ? ' · ' + data.incidentId : ''));
-        await loadSnapshot();
+        await loadSnapshot(true);
       } catch (e) {
         $('reply').textContent = 'Explain failed: ' + e.message;
         toast(e.message, true);
@@ -507,14 +762,21 @@
       }
     }
 
+    function startPolling() {
+      if (state.pollTimer) clearInterval(state.pollTimer);
+      state.pollTimer = setInterval(() => loadSnapshot(true), POLL_MS);
+    }
+
     $('loginBtn').addEventListener('click', login);
     $('loginPass').addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
     $('logoutBtn').addEventListener('click', () => { clearAuth(); toast('Signed out'); });
-    $('refreshBtn').addEventListener('click', loadSnapshot);
+    $('refreshBtn').addEventListener('click', () => loadSnapshot(false));
     $('explainBtn').addEventListener('click', () => explain());
 
-    loadMeta().then(loadSnapshot).catch(e => toast(e.message, true));
-    setInterval(loadSnapshot, 30000);
+    loadMeta()
+      .then(() => loadSnapshot(false))
+      .then(startPolling)
+      .catch(e => toast(e.message, true));
   </script>
 </body>
 </html>

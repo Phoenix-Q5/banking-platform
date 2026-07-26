@@ -6,8 +6,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.util.UriComponentsBuilder;
+import org.springframework.web.util.UriUtils;
 
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -21,9 +23,11 @@ public class LokiQueryTool implements AgentTool {
     private static final Logger log = LoggerFactory.getLogger(LokiQueryTool.class);
 
     private final WebClient webClient;
+    private final String baseUrl;
 
     public LokiQueryTool(WebClient.Builder builder, OpsAgentProperties properties) {
-        this.webClient = builder.baseUrl(properties.getObservability().getLokiUrl()).build();
+        this.baseUrl = trimTrailingSlash(properties.getObservability().getLokiUrl());
+        this.webClient = builder.build();
     }
 
     @Override
@@ -57,13 +61,11 @@ public class LokiQueryTool implements AgentTool {
         Instant start = end.minus(Duration.ofMinutes(minutesBack));
 
         try {
-            String uri = UriComponentsBuilder.fromPath("/loki/api/v1/query_range")
-                .queryParam("query", q.toString())
-                .queryParam("limit", limit)
-                .queryParam("start", start.toEpochMilli() * 1_000_000L)
-                .queryParam("end", end.toEpochMilli() * 1_000_000L)
-                .build()
-                .toUriString();
+            URI uri = URI.create(baseUrl + "/loki/api/v1/query_range"
+                + "?query=" + UriUtils.encodeQueryParam(q.toString(), StandardCharsets.UTF_8)
+                + "&limit=" + limit
+                + "&start=" + (start.toEpochMilli() * 1_000_000L)
+                + "&end=" + (end.toEpochMilli() * 1_000_000L));
 
             JsonNode body = webClient.get()
                 .uri(uri)
@@ -111,5 +113,12 @@ public class LokiQueryTool implements AgentTool {
         } catch (NumberFormatException ex) {
             return defaultValue;
         }
+    }
+
+    private static String trimTrailingSlash(String url) {
+        if (url == null || url.isBlank()) {
+            return "http://localhost:3100";
+        }
+        return url.endsWith("/") ? url.substring(0, url.length() - 1) : url;
     }
 }

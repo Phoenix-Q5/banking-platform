@@ -6,8 +6,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.util.UriComponentsBuilder;
+import org.springframework.web.util.UriUtils;
 
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -18,9 +20,11 @@ public class PrometheusQueryTool implements AgentTool {
     private static final Logger log = LoggerFactory.getLogger(PrometheusQueryTool.class);
 
     private final WebClient webClient;
+    private final String baseUrl;
 
     public PrometheusQueryTool(WebClient.Builder builder, OpsAgentProperties properties) {
-        this.webClient = builder.baseUrl(properties.getObservability().getPrometheusUrl()).build();
+        this.baseUrl = trimTrailingSlash(properties.getObservability().getPrometheusUrl());
+        this.webClient = builder.build();
     }
 
     @Override
@@ -49,10 +53,10 @@ public class PrometheusQueryTool implements AgentTool {
         }
         String query = q.toString();
         try {
-            String uri = UriComponentsBuilder.fromPath("/api/v1/query")
-                .queryParam("query", query)
-                .build()
-                .toUriString();
+            // Build an absolute URI ourselves. WebClient's UriBuilder treats PromQL
+            // `{label=...}` as URI templates, and re-encodes pre-encoded strings.
+            URI uri = URI.create(baseUrl + "/api/v1/query?query="
+                + UriUtils.encodeQueryParam(query, StandardCharsets.UTF_8));
 
             JsonNode body = webClient.get()
                 .uri(uri)
@@ -81,5 +85,12 @@ public class PrometheusQueryTool implements AgentTool {
             log.warn("prometheus_query failed: {}", ex.getMessage());
             return ToolResult.fail("Prometheus query error: " + ex.getMessage());
         }
+    }
+
+    private static String trimTrailingSlash(String url) {
+        if (url == null || url.isBlank()) {
+            return "http://localhost:9090";
+        }
+        return url.endsWith("/") ? url.substring(0, url.length() - 1) : url;
     }
 }
