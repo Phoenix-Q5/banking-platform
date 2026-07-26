@@ -38,10 +38,12 @@ public class AiAgentProperties {
 
     public static class Ollama {
         private String baseUrl = "http://localhost:11434";
-        private String chatModel = "llama3.2:3b";
+        private String chatModel = "llama3.2:1b";
         private String embedModel = "nomic-embed-text";
         private double temperature = 0.2;
         private int timeoutSeconds = 180;
+        private int numCtx = 2048;
+        private int numPredict = 512;
 
         public String getBaseUrl() {
             return baseUrl;
@@ -81,6 +83,22 @@ public class AiAgentProperties {
 
         public void setTimeoutSeconds(int timeoutSeconds) {
             this.timeoutSeconds = timeoutSeconds;
+        }
+
+        public int getNumCtx() {
+            return numCtx;
+        }
+
+        public void setNumCtx(int numCtx) {
+            this.numCtx = numCtx;
+        }
+
+        public int getNumPredict() {
+            return numPredict;
+        }
+
+        public void setNumPredict(int numPredict) {
+            this.numPredict = numPredict;
         }
     }
 

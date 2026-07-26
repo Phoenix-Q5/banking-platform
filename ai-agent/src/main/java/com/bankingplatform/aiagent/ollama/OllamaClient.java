@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -81,6 +82,9 @@ public class OllamaClient {
             payload.put("stream", false);
             ObjectNode options = payload.putObject("options");
             options.put("temperature", cfg.getTemperature());
+            // Keep context small so Docker Desktop Mac does not OOM-kill llama-server.
+            options.put("num_ctx", Math.max(512, cfg.getNumCtx()));
+            options.put("num_predict", Math.max(64, cfg.getNumPredict()));
 
             ArrayNode messages = payload.putArray("messages");
             if (systemPrompt != null && !systemPrompt.isBlank()) {
@@ -104,6 +108,10 @@ public class OllamaClient {
                 content = response.path("response").asText("");
             }
             return content;
+        } catch (WebClientResponseException ex) {
+            String body = ex.getResponseBodyAsString();
+            log.warn("Ollama chat failed: {} body={}", ex.getMessage(), truncate(body, 500));
+            throw new IllegalStateException(friendlyOllamaError(ex.getStatusCode().value(), body), ex);
         } catch (Exception ex) {
             log.warn("Ollama chat failed: {}", ex.getMessage());
             throw new IllegalStateException("Ollama chat failed: " + ex.getMessage(), ex);
@@ -156,5 +164,22 @@ public class OllamaClient {
             return "http://localhost:11434";
         }
         return url.endsWith("/") ? url.substring(0, url.length() - 1) : url;
+    }
+
+    private static String truncate(String s, int max) {
+        if (s == null) {
+            return "";
+        }
+        return s.length() <= max ? s : s.substring(0, max) + "…";
+    }
+
+    private static String friendlyOllamaError(int status, String body) {
+        String lower = body == null ? "" : body.toLowerCase();
+        if (lower.contains("signal: killed") || lower.contains("out of memory") || lower.contains("oom")) {
+            return "Ollama ran out of memory loading the chat model (Docker likely killed llama-server). "
+                + "Use a smaller model (llama3.2:1b) or raise Docker Desktop memory to ≥8GB. "
+                + "Details: " + truncate(body, 240);
+        }
+        return "Ollama chat failed (" + status + "): " + truncate(body, 240);
     }
 }

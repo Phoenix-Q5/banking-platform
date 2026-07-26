@@ -164,7 +164,7 @@ public class OpsAgentProperties {
         private String provider = "ollama";
         private String baseUrl = "http://localhost:11434/v1";
         private String apiKey = "ollama";
-        private String model = "llama3.2:3b";
+        private String model = "llama3.2:1b";
         private double temperature = 0.2;
         private int timeoutSeconds = 120;
 

@@ -37,13 +37,13 @@ Command Center POC: http://localhost:8085/command-center.html
 ### Enable a real LLM (Ollama on Mac — recommended)
 
 ```bash
-# Host: ollama pull llama3.2:3b
+# Host: ollama pull llama3.2:1b
 export LLM_ENABLED=true
 export LLM_PROVIDER=ollama
 export LLM_BASE_URL=http://localhost:11434/v1          # local process
 # In Docker Compose the default is http://host.docker.internal:11434/v1
 export LLM_API_KEY=ollama
-export LLM_MODEL=llama3.2:3b
+export LLM_MODEL=llama3.2:1b
 docker-compose up -d ops-agent
 ```
 

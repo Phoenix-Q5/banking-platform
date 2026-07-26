@@ -67,14 +67,22 @@ public class CodeAgentService {
 
         StringBuilder context = new StringBuilder();
         List<Map<String, Object>> sources = new ArrayList<>();
+        int maxContextChars = 6000;
         for (int i = 0; i < hits.size(); i++) {
             InMemoryVectorStore.ScoredChunk hit = hits.get(i);
             RagChunk chunk = hit.chunk();
-            context.append("[").append(i + 1).append("] ")
-                .append(chunk.getPath())
-                .append(" lines ").append(chunk.getStartLine()).append("-").append(chunk.getEndLine())
-                .append(" (score=").append(String.format("%.3f", hit.score())).append(")\n")
-                .append(chunk.getText()).append("\n\n");
+            String excerpt = chunk.getText();
+            if (excerpt != null && excerpt.length() > 1200) {
+                excerpt = excerpt.substring(0, 1200) + "…";
+            }
+            String block = "[" + (i + 1) + "] " + chunk.getPath()
+                + " lines " + chunk.getStartLine() + "-" + chunk.getEndLine()
+                + " (score=" + String.format("%.3f", hit.score()) + ")\n"
+                + excerpt + "\n\n";
+            if (context.length() + block.length() > maxContextChars) {
+                break;
+            }
+            context.append(block);
 
             Map<String, Object> src = new LinkedHashMap<>();
             src.put("path", chunk.getPath());
