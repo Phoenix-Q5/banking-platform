@@ -1,0 +1,52 @@
+server:
+  port: 8095
+
+spring:
+  application:
+    name: ai-agent
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, prometheus, metrics
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
+
+ai-agent:
+  platform-name: ${PLATFORM_NAME:harbor-bank}
+  ollama:
+    # Native Ollama HTTP API (chat + embeddings). On Docker Desktop Mac use host.docker.internal.
+    base-url: ${OLLAMA_BASE_URL:http://localhost:11434}
+    chat-model: ${OLLAMA_CHAT_MODEL:llama3.2:3b}
+    embed-model: ${OLLAMA_EMBED_MODEL:nomic-embed-text}
+    temperature: ${OLLAMA_TEMPERATURE:0.2}
+    timeout-seconds: ${OLLAMA_TIMEOUT_SECONDS:180}
+  rag:
+    # Repo root to index (local: project root; docker: mounted volume)
+    root-path: ${AI_RAG_ROOT:..}
+    persist-path: ${AI_RAG_PERSIST:./data/rag-index.json}
+    auto-index-on-startup: ${AI_RAG_AUTO_INDEX:true}
+    top-k: ${AI_RAG_TOP_K:6}
+    chunk-chars: ${AI_RAG_CHUNK_CHARS:1200}
+    chunk-overlap: ${AI_RAG_CHUNK_OVERLAP:150}
+    max-files: ${AI_RAG_MAX_FILES:400}
+    include-globs: "**/*.java,**/*.yml,**/*.yaml,**/*.md,**/*.xml,**/*.ts,**/*.tsx,**/*.swift"
+    exclude-globs: "**/target/**,**/node_modules/**,**/.git/**,**/build/**,**/dist/**,**/*.class"
+
+logging:
+  level:
+    root: INFO
+    com.bankingplatform.aiagent: DEBUG
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html

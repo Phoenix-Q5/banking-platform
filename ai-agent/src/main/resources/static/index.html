@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Harbor AI Agent</title>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0b1220; --panel: #151f33; --ink: #e8eef7; --muted: #8b9bb0;
+      --line: #2a3a55; --accent: #2dd4a8; --accent-2: #5b9fd4; --warn: #e6a23c;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh; color: var(--ink); font-family: "IBM Plex Sans", sans-serif;
+      background:
+        radial-gradient(900px 480px at 0% -10%, rgba(45,212,168,.08), transparent 55%),
+        radial-gradient(800px 420px at 100% 0%, rgba(91,159,212,.1), transparent 50%),
+        linear-gradient(180deg, #0a101c, var(--bg) 40%, #0d1524);
+    }
+    .shell { max-width: 980px; margin: 0 auto; padding: 24px 16px 48px; }
+    h1 { margin: 0 0 6px; font-size: 1.7rem; letter-spacing: -.02em; }
+    .tag { color: var(--muted); margin: 0 0 18px; line-height: 1.45; }
+    .meta { display: flex; flex-wrap: wrap; gap: 10px 14px; color: var(--muted); font-size: .84rem; font-family: "JetBrains Mono", monospace; margin-bottom: 14px; }
+    .meta strong { color: var(--ink); font-weight: 500; }
+    .panel {
+      background: var(--panel); border: 1px solid var(--line); border-radius: 8px;
+      padding: 14px; margin-bottom: 12px; box-shadow: 0 12px 40px rgba(0,0,0,.35);
+    }
+    h2 { margin: 0 0 10px; font-size: .72rem; letter-spacing: .12em; text-transform: uppercase; color: var(--accent-2); }
+    textarea, button, input { font: inherit; }
+    textarea {
+      width: 100%; min-height: 100px; resize: vertical; border: 1px solid var(--line);
+      background: #111a2b; color: var(--ink); padding: 10px 12px; border-radius: 4px;
+    }
+    .row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+    button {
+      border: 0; background: var(--accent); color: #06261c; padding: 8px 14px;
+      border-radius: 4px; cursor: pointer; font-weight: 650;
+    }
+    button.secondary { background: transparent; color: var(--accent-2); border: 1px solid var(--line); }
+    button:disabled { opacity: .55; cursor: wait; }
+    .reply {
+      white-space: pre-wrap; line-height: 1.55; font-size: .9rem; color: #c9d4e4;
+      font-family: "JetBrains Mono", monospace; font-size: .8rem; max-height: 420px; overflow: auto;
+    }
+    .src {
+      border: 1px solid var(--line); background: #111a2b; padding: 8px 10px; margin-top: 8px;
+      border-radius: 4px; font-size: .84rem;
+    }
+    .badge {
+      display: inline-block; font-size: .66rem; letter-spacing: .05em; text-transform: uppercase;
+      padding: 2px 7px; border: 1px solid var(--line); border-radius: 3px; color: var(--muted); margin-right: 6px;
+    }
+    .badge.ok { color: var(--accent); border-color: rgba(45,212,168,.45); }
+    .badge.warn { color: var(--warn); border-color: rgba(230,162,60,.45); }
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+    .chip {
+      border: 1px solid var(--line); background: #111a2b; color: var(--accent-2);
+      padding: 6px 10px; font-size: .8rem; cursor: pointer; border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <h1>Harbor AI Agent</h1>
+    <p class="tag">
+      Local Ollama + RAG over the banking-platform repo. Ask about architecture, find bugs, and get fix guidance —
+      no cloud LLM required.
+    </p>
+    <div class="meta" id="meta">Loading…</div>
+
+    <section class="panel">
+      <h2>Ask the code agent</h2>
+      <textarea id="q" placeholder="Example: How does ops-agent investigate alerts using Prometheus and Tempo?"></textarea>
+      <div class="row">
+        <button id="askBtn">Ask</button>
+        <button class="secondary" id="analyzeBtn">Analyze focus</button>
+        <button class="secondary" id="indexBtn">Rebuild index</button>
+        <button class="secondary" id="refreshBtn">Refresh status</button>
+      </div>
+      <div class="chips">
+        <button class="chip" data-q="Explain the payment-service transfer flow and failure modes">Payment flow</button>
+        <button class="chip" data-q="Where is circuit breaker logic and how should we harden it?">Circuit breakers</button>
+        <button class="chip" data-q="How does the ops-agent Command Center build its monitoring snapshot?">Command Center</button>
+        <button class="chip" data-q="Summarize security and JWT handling in api-gateway">API security</button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Answer</h2>
+      <div class="reply" id="reply">Ask a question to retrieve repo context and generate an answer with your local model.</div>
+      <div id="sources"></div>
+    </section>
+  </div>
+
+  <script>
+    const $ = id => document.getElementById(id);
+
+    async function api(path, options = {}) {
+      options.headers = Object.assign({ 'Content-Type': 'application/json' }, options.headers || {});
+      const res = await fetch(path, options);
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.message || body.error || (res.status + ' ' + res.statusText));
+      return body;
+    }
+
+    async function loadHealth() {
+      const h = await api('/api/ai/health');
+      const o = h.ollama || {};
+      const r = h.rag || {};
+      $('meta').innerHTML = `
+        <span><strong>Platform</strong> ${h.platform}</span>
+        <span><strong>Ollama</strong> ${o.reachable ? '<span class="badge ok">up</span>' : '<span class="badge warn">down</span>'} ${o.baseUrl || ''}</span>
+        <span><strong>Chat</strong> ${o.chatModel || '—'}</span>
+        <span><strong>Embed</strong> ${o.embedModel || '—'}</span>
+        <span><strong>Chunks</strong> ${r.chunks ?? 0}</span>
+        <span><strong>Ready</strong> ${h.ready ? 'yes' : 'no'}</span>
+      `;
+      return h;
+    }
+
+    function renderAnswer(data) {
+      $('reply').textContent = data.answer || JSON.stringify(data, null, 2);
+      const sources = data.sources || [];
+      $('sources').innerHTML = sources.length
+        ? sources.map(s => `<div class="src"><span class="badge ok">${s.score}</span><code>${s.path}:${s.startLine}-${s.endLine}</code></div>`).join('')
+        : '';
+    }
+
+    $('askBtn').onclick = async () => {
+      const question = $('q').value.trim();
+      if (!question) return;
+      $('askBtn').disabled = true;
+      $('reply').textContent = 'Retrieving context + generating with Ollama…';
+      try {
+        renderAnswer(await api('/api/ai/ask', { method: 'POST', body: JSON.stringify({ question }) }));
+        await loadHealth();
+      } catch (e) {
+        $('reply').textContent = 'Error: ' + e.message;
+      } finally {
+        $('askBtn').disabled = false;
+      }
+    };
+
+    $('analyzeBtn').onclick = async () => {
+      const focus = $('q').value.trim();
+      $('analyzeBtn').disabled = true;
+      $('reply').textContent = 'Analyzing with RAG + Ollama…';
+      try {
+        renderAnswer(await api('/api/ai/analyze', { method: 'POST', body: JSON.stringify({ focus: focus || null }) }));
+      } catch (e) {
+        $('reply').textContent = 'Error: ' + e.message;
+      } finally {
+        $('analyzeBtn').disabled = false;
+      }
+    };
+
+    $('indexBtn').onclick = async () => {
+      $('indexBtn').disabled = true;
+      $('reply').textContent = 'Indexing repository (embeddings via Ollama) — first run can take several minutes…';
+      try {
+        const result = await api('/api/ai/index', { method: 'POST', body: '{}' });
+        $('reply').textContent = JSON.stringify(result, null, 2);
+        await loadHealth();
+      } catch (e) {
+        $('reply').textContent = 'Index error: ' + e.message;
+      } finally {
+        $('indexBtn').disabled = false;
+      }
+    };
+
+    $('refreshBtn').onclick = () => loadHealth().catch(e => $('meta').textContent = e.message);
+    document.querySelectorAll('.chip').forEach(btn => btn.onclick = () => { $('q').value = btn.getAttribute('data-q'); });
+
+    loadHealth().catch(e => $('meta').textContent = e.message);
+  </script>
+</body>
+</html>

@@ -6,6 +6,7 @@ networks:
 
 volumes:
   postgres-data:
+  ai-agent-data:
 
 services:
   postgres:
@@ -381,9 +382,11 @@ services:
       NOTIFICATION_SERVICE_URL: http://notification-service:8087
       SERVICE_ALERTS_ENABLED: "true"
       LLM_ENABLED: ${LLM_ENABLED:-false}
-      LLM_BASE_URL: ${LLM_BASE_URL:-https://api.openai.com/v1}
-      LLM_API_KEY: ${LLM_API_KEY:-}
-      LLM_MODEL: ${LLM_MODEL:-gpt-4o-mini}
+      LLM_PROVIDER: ${LLM_PROVIDER:-ollama}
+      LLM_BASE_URL: ${LLM_BASE_URL:-http://host.docker.internal:11434/v1}
+      LLM_API_KEY: ${LLM_API_KEY:-ollama}
+      LLM_MODEL: ${LLM_MODEL:-llama3.2:3b}
+      LLM_TIMEOUT_SECONDS: ${LLM_TIMEOUT_SECONDS:-120}
       OPS_SECURITY_ENABLED: ${OPS_SECURITY_ENABLED:-true}
       OPS_KEYCLOAK_TOKEN_URL: ${OPS_KEYCLOAK_TOKEN_URL:-http://localhost:8180/realms/banking/protocol/openid-connect/token}
       KEYCLOAK_ISSUER_URI: http://localhost:8180/realms/banking
@@ -395,6 +398,8 @@ services:
       SPRING_PROFILES_ACTIVE: json-logs
     ports:
       - "8085:8085"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       prometheus:
         condition: service_started
@@ -410,6 +415,29 @@ services:
         condition: service_healthy
       keycloak:
         condition: service_started
+    networks: [banking-net]
+
+  ai-agent:
+    build:
+      context: .
+      dockerfile: ai-agent/Dockerfile
+    environment:
+      PLATFORM_NAME: harbor-bank
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      OLLAMA_CHAT_MODEL: ${OLLAMA_CHAT_MODEL:-llama3.2:3b}
+      OLLAMA_EMBED_MODEL: ${OLLAMA_EMBED_MODEL:-nomic-embed-text}
+      OLLAMA_TIMEOUT_SECONDS: ${OLLAMA_TIMEOUT_SECONDS:-180}
+      AI_RAG_ROOT: /workspace
+      AI_RAG_PERSIST: /app/data/rag-index.json
+      AI_RAG_AUTO_INDEX: ${AI_RAG_AUTO_INDEX:-false}
+      AI_RAG_MAX_FILES: ${AI_RAG_MAX_FILES:-350}
+    volumes:
+      - ./:/workspace:ro
+      - ai-agent-data:/app/data
+    ports:
+      - "8095:8095"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     networks: [banking-net]
 
   db-seed:

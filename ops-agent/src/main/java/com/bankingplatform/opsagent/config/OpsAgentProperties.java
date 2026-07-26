@@ -161,12 +161,12 @@ public class OpsAgentProperties {
 
     public static class Llm {
         private boolean enabled;
-        private String provider = "openai-compatible";
-        private String baseUrl = "https://api.openai.com/v1";
-        private String apiKey = "";
-        private String model = "gpt-4o-mini";
+        private String provider = "ollama";
+        private String baseUrl = "http://localhost:11434/v1";
+        private String apiKey = "ollama";
+        private String model = "llama3.2:3b";
         private double temperature = 0.2;
-        private int timeoutSeconds = 60;
+        private int timeoutSeconds = 120;
 
         public boolean isEnabled() {
             return enabled;

@@ -48,9 +48,25 @@ public class OpenAiCompatibleReasoningEngine implements ReasoningEngine {
     }
 
     public boolean isAvailable() {
-        return properties.getLlm().isEnabled()
-            && properties.getLlm().getApiKey() != null
+        if (!properties.getLlm().isEnabled()) {
+            return false;
+        }
+        // Ollama and many local gateways do not require a real API key.
+        if (isLocalProvider()) {
+            return properties.getLlm().getBaseUrl() != null
+                && !properties.getLlm().getBaseUrl().isBlank();
+        }
+        return properties.getLlm().getApiKey() != null
             && !properties.getLlm().getApiKey().isBlank();
+    }
+
+    private boolean isLocalProvider() {
+        String provider = properties.getLlm().getProvider();
+        String base = properties.getLlm().getBaseUrl() == null ? "" : properties.getLlm().getBaseUrl().toLowerCase();
+        return "ollama".equalsIgnoreCase(provider)
+            || base.contains("11434")
+            || base.contains("localhost")
+            || base.contains("host.docker.internal");
     }
 
     @Override
@@ -71,7 +87,7 @@ public class OpenAiCompatibleReasoningEngine implements ReasoningEngine {
         OpsAgentProperties.Llm llm = properties.getLlm();
         WebClient client = webClientBuilder
             .baseUrl(trimTrailingSlash(llm.getBaseUrl()))
-            .defaultHeader("Authorization", "Bearer " + llm.getApiKey())
+            .defaultHeader("Authorization", "Bearer " + bearerToken(llm))
             .build();
 
         ObjectNode payload = objectMapper.createObjectNode();
@@ -249,6 +265,13 @@ public class OpenAiCompatibleReasoningEngine implements ReasoningEngine {
             }
         }
         return bullets;
+    }
+
+    private String bearerToken(OpsAgentProperties.Llm llm) {
+        if (llm.getApiKey() != null && !llm.getApiKey().isBlank()) {
+            return llm.getApiKey();
+        }
+        return "ollama";
     }
 
     private String trimTrailingSlash(String url) {

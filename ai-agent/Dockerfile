@@ -1,5 +1,6 @@
 FROM maven:3.9-eclipse-temurin-17 AS build
 WORKDIR /workspace
+
 COPY pom.xml .
 COPY banking-events/pom.xml banking-events/pom.xml
 COPY api-gateway/pom.xml api-gateway/pom.xml
@@ -13,12 +14,15 @@ COPY card-service/pom.xml card-service/pom.xml
 COPY notification-service/pom.xml notification-service/pom.xml
 COPY audit-service/pom.xml audit-service/pom.xml
 COPY loan-service/pom.xml loan-service/pom.xml
-RUN mvn -q -pl loan-service -am dependency:go-offline -DskipTests || true
-COPY banking-events banking-events
-COPY loan-service loan-service
-RUN mvn -q -pl loan-service -am clean package -DskipTests
+
+RUN mvn -q -pl ai-agent -am dependency:go-offline -DskipTests || true
+
+COPY ai-agent ai-agent
+RUN mvn -q -pl ai-agent -am clean package -DskipTests
+
 FROM eclipse-temurin:17-jre-jammy
 WORKDIR /app
-COPY --from=build /workspace/loan-service/target/*.jar app.jar
-EXPOSE 8089
+COPY --from=build /workspace/ai-agent/target/*.jar app.jar
+RUN mkdir -p /app/data /workspace
+EXPOSE 8095
 ENTRYPOINT ["java", "-jar", "app.jar"]

@@ -6,6 +6,7 @@ COPY api-gateway/pom.xml api-gateway/pom.xml
 COPY account-service/pom.xml account-service/pom.xml
 COPY transaction-service/pom.xml transaction-service/pom.xml
 COPY ops-agent/pom.xml ops-agent/pom.xml
+COPY ai-agent/pom.xml ai-agent/pom.xml
 COPY customer-service/pom.xml customer-service/pom.xml
 COPY payment-service/pom.xml payment-service/pom.xml
 COPY card-service/pom.xml card-service/pom.xml

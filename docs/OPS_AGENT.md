@@ -34,17 +34,24 @@ docker-compose up -d --build
 Ops agent console: http://localhost:8085  
 Command Center POC: http://localhost:8085/command-center.html
 
-### Enable a real LLM (optional)
+### Enable a real LLM (Ollama on Mac — recommended)
 
 ```bash
+# Host: ollama pull llama3.2:3b
 export LLM_ENABLED=true
-export LLM_API_KEY=sk-...
-export LLM_BASE_URL=https://api.openai.com/v1   # or Ollama / Azure-compatible gateway
-export LLM_MODEL=gpt-4o-mini
+export LLM_PROVIDER=ollama
+export LLM_BASE_URL=http://localhost:11434/v1          # local process
+# In Docker Compose the default is http://host.docker.internal:11434/v1
+export LLM_API_KEY=ollama
+export LLM_MODEL=llama3.2:3b
 docker-compose up -d ops-agent
 ```
 
-Without an API key the agent stays fully functional on the heuristic engine.
+Cloud OpenAI-compatible gateways still work by setting `LLM_BASE_URL` / `LLM_API_KEY` / `LLM_MODEL`.
+
+Without a reachable LLM the agent stays fully functional on the heuristic engine.
+
+For the **local RAG code agent** (architecture Q&A / fix guidance), see [AI_AGENT.md](./AI_AGENT.md).
 
 ## Install into another application
 
